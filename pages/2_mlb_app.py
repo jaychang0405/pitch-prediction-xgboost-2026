@@ -21,10 +21,10 @@ st.set_page_config(page_title="MLB Dynamic Prediction", layout="wide")
 # ==========================================
 DATA_PATH = "data_mlb"
 
-# pwd = st.text_input("🔒 請輸入存取密碼", type="password")
-# if pwd != "20050405":  
-#     st.warning("請輸入正確密碼以解鎖系統。")
-#     st.stop()  
+pwd = st.text_input("🔒 請輸入存取密碼", type="password")
+if pwd != "20050405":  
+    st.warning("請輸入正確密碼以解鎖系統。")
+    st.stop()  
 
 # ==========================================
 # 1. 雙語字典設定
