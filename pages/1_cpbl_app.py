@@ -21,10 +21,10 @@ st.set_page_config(page_title="CPBL 動態決策支援", page_icon="🇹🇼", l
 # ==========================================
 DATA_PATH = "data_cpbl"  # 設定為獨立資料夾
 
-pwd = st.text_input("🔒 請輸入存取密碼", type="password")
-if pwd != "20050405":  
-    st.warning("請輸入正確密碼以解鎖系統。")
-    st.stop()  
+# pwd = st.text_input("🔒 請輸入存取密碼", type="password")
+# if pwd != "20050405":  
+#     st.warning("請輸入正確密碼以解鎖系統。")
+#     st.stop()  
 
 def clean_name(name):
     """輔助函式：去除掉下拉選單中為了美觀加上的火焰符號"""
