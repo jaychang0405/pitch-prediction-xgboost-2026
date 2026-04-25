@@ -21,10 +21,41 @@ st.set_page_config(page_title="MLB Dynamic Prediction", layout="wide")
 # ==========================================
 DATA_PATH = "data_mlb"
 
-# pwd = st.text_input("🔒 請輸入存取密碼", type="password")
-# if pwd != "20050405":  
-#     st.warning("請輸入正確密碼以解鎖系統。")
-#     st.stop()  
+# ==========================================
+# 🔐 全域密碼鎖系統
+# ==========================================
+def check_password():
+    # 1. 如果是第一次進來，預設為未登入 (False)
+    if "password_correct" not in st.session_state:
+        st.session_state["password_correct"] = False
+
+    # 2. 如果尚未登入，顯示輸入框並隱藏其他內容
+    if not st.session_state["password_correct"]:
+        st.title("🔒 棒球動態決策支援中心")
+        st.info("系統已鎖定，請輸入專屬授權密碼以進入預測系統。")
+        
+        pwd = st.text_input("🔑 存取密碼", type="password")
+        
+        if pwd == "20050405":  # 你的通關密碼
+            st.session_state["password_correct"] = True
+            st.rerun()  # 密碼正確，瞬間重新載入畫面
+        elif pwd:
+            st.error("❌ 密碼錯誤，請重新確認。")
+        
+        # 3. 施展魔法：用 CSS 把左側選單完全隱藏，防止未登入者偷看或點擊
+        st.markdown(
+            """
+            <style>
+                [data-testid="collapsedControl"] {display: none;}
+                [data-testid="stSidebar"] {display: none;}
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.stop()  # 🛑 程式會停在這裡，下面的內容完全不會顯示！
+
+# 啟動密碼檢查
+check_password() 
 
 # ==========================================
 # 1. 雙語字典設定
