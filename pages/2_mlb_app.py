@@ -28,7 +28,7 @@ LANG = {
     "zh": {
         "title": "MLB 動態決策支援系統",
         "subtitle": "基於 Statcast 與 XGBoost 的即時戰術分析",
-        "menu": "🔍 功能選單",
+        "menu": "功能選單",
         "mode_pitch": " 預測下一球球種",
         "mode_obp": " 預測打擊結果 (上壘率)",
         "input_header": " 輸入當下比賽情境",
@@ -40,7 +40,7 @@ LANG = {
     "en": {
         "title": "MLB Dynamic Decision Support",
         "subtitle": "Real-time Tactical Analysis based on Statcast & XGBoost",
-        "menu": "🔍 Menu",
+        "menu": "Menu",
         "mode_pitch": " Predict Next Pitch",
         "mode_obp": " Predict At-Bat Outcome (OBP)",
         "input_header": " Input Current Context",
@@ -206,7 +206,7 @@ with col_inputs:
         with o2: platoon = st.toggle("投打對決優勢 (Platoon Adv.)", value=False)
 
     if app_mode == t("mode_pitch"):
-        st.markdown("#### ⚾ 球種序列特徵")
+        st.markdown("#### 球種序列特徵")
         c7, c8 = st.columns(2)
         with c7: prev_pitch = st.selectbox("前一球配球", ["First_Pitch", "Fastball_System", "Slider_Cutter", "Curveball", "Changeup"])
         with c8: prev_outcome = st.selectbox("前一球結果", ["First_Pitch", "ball", "called_strike", "swinging_strike", "foul", "hit_into_play", "other"])
@@ -273,14 +273,14 @@ if app_mode == t("mode_pitch"):
 
         res_c1, res_c2 = st.columns([1, 1])
         with res_c1:
-            st.info("📊 模型預測機率")
+            st.info("模型預測機率")
             st.metric(label="🥇 首選預測球種", value=UI_NAMES.get(best_pitch_raw, best_pitch_raw), delta=f"{best_prob:.1f}%")
             st.metric(label="🥈 備用引誘球種", value=UI_NAMES.get(second_pitch_raw, second_pitch_raw), delta=f"{second_prob:.1f}%", delta_color="off")
             df_chart = pd.DataFrame({"Pitch Type": [UI_NAMES.get(c, c) for c in final_classes], "Probability (%)": final_probs}).set_index("Pitch Type")
             st.bar_chart(df_chart)
 
         with res_c2:
-            st.info("⚾ 九宮格落點預測 (模擬位置)")
+            st.info("九宮格落點預測 (模擬位置)")
             fig = draw_strike_zone(best_pitch_raw.split('_')[0], best_prob)
             st.pyplot(fig)
 
@@ -295,7 +295,7 @@ elif app_mode == t("mode_obp"):
             
             clean_batter_name = selected_batter.replace("🔥 ", "")
             clean_pitcher_name = selected_pitcher.replace("🔥 ", "")
-            st.info(f"💡 數據庫載入成功：{clean_batter_name} OBP ({hist_b_obp:.3f}) / {clean_pitcher_name} 被上壘率 ({hist_p_obp:.3f})")
+            st.info(f"數據庫載入成功：{clean_batter_name} OBP ({hist_b_obp:.3f}) / {clean_pitcher_name} 被上壘率 ({hist_p_obp:.3f})")
 
             feature_names = ['balls', 'strikes', 'outs_when_up', 'inning', 'score_diff', 
                              'runners_on_base', 'pitch_count', 'batter_hist_obp', 

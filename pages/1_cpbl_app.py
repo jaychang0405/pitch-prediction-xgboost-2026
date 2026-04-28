@@ -34,14 +34,14 @@ LANG = {
     "zh": {
         "title": "中職動態決策支援系統",
         "subtitle": "基於 XGBoost 的球種預測與上壘率 (OBP) 分析",
-        "menu": "🔍 功能選單",
+        "menu": "功能選單",
         "mode_pitch": " 預測下一球球種",
         "mode_obp": " 預測打擊結果 (上壘率)",
     },
     "en": {
         "title": "CPBL Dynamic Decision Support",
         "subtitle": "Pitch Prediction & OBP Analysis based on XGBoost",
-        "menu": "🔍 Menu",
+        "menu": "Menu",
         "mode_pitch": " Predict Next Pitch",
         "mode_obp": " Predict At-Bat Outcome (OBP)",
     }
@@ -246,13 +246,13 @@ if app_mode == t("mode_pitch"):
 
         res_col1, res_col2 = st.columns([1, 1])
         with res_col1:
-            st.info("📊 模型預測數據")
+            st.info("模型預測數據")
             st.metric(label="🥇 首選建議球種", value=ui_predicted_name, delta=f"{predicted_prob:.1f}%")
             st.metric(label="🥈 備用引誘球種", value=ui_secondary_name, delta=f"{secondary_prob:.1f}%", delta_color="off")
             df_chart = pd.DataFrame({"球種": chart_names, "機率(%)": chart_probs}).set_index("球種")
             st.bar_chart(df_chart)
         with res_col2:
-            st.info("⚾ 九宮格視覺化 (Strike Zone)")
+            st.info("九宮格視覺化 (Strike Zone)")
             fig = draw_strike_zone(plot_predicted_name_en, predicted_prob)
             st.pyplot(fig)
 
@@ -291,7 +291,7 @@ elif app_mode == t("mode_obp"):
             hist_b_obp = data["obp_db_dict"]["b"].get(clean_batter, 0.330)
             hist_p_obp = data["obp_db_dict"]["p"].get(clean_pitcher, 0.330)
             
-            st.info(f"💡 系統自動偵測帶入：{clean_batter} 歷史 OBP ({hist_b_obp:.3f}) / {clean_pitcher} 歷史被 OBP ({hist_p_obp:.3f})")
+            st.info(f"系統自動偵測帶入：{clean_batter} 歷史 OBP ({hist_b_obp:.3f}) / {clean_pitcher} 歷史被 OBP ({hist_p_obp:.3f})")
 
             # 嚴格對齊組員原本的 12 項特徵順序與欄位名稱
             feature_names = ['balls', 'strikes', 'outs_when_up', 'inning', 'score_diff', 'runners_on_base', 
