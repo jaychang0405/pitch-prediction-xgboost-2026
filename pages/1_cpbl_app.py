@@ -260,7 +260,7 @@ if app_mode == t("mode_pitch"):
 # 模式 B: 上壘率預測
 # ------------------------------------------
 elif app_mode == t("mode_obp"):
-    st.markdown("#### 🏃‍♂️ 模型進階特徵 (XGBoost 必備欄位)")
+    st.markdown("#### 模型進階特徵 (XGBoost 必備欄位)")
     
     r1, r2, r3 = st.columns(3)
     with r1:
