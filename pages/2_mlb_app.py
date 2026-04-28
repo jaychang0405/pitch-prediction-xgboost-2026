@@ -21,7 +21,7 @@ DATA_PATH = "data_mlb"
 
 st.set_page_config(
     page_title="MLB Dynamic Prediction System",
-    page_icon="data_cpbl/tennis-ball.svg",
+    page_icon=os.path.join(DATA_PATH, "tennis-ball.svg"),
     layout="wide"
 )
 
