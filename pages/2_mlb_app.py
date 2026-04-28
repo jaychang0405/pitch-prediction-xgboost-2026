@@ -200,7 +200,7 @@ with col_inputs:
     with c6: selected_batter = st.selectbox(t("batter"), list(batters_db.keys()))
 
     if app_mode == t("mode_obp"):
-        st.markdown("#### 🏃‍♂️ OBP 進階特徵 (XGBoost 必備)")
+        st.markdown("#### OBP 進階特徵 (XGBoost 必備)")
         o1, o2 = st.columns(2)
         with o1: is_home = st.toggle("主場球隊打擊 (Is Home Team)", value=True)
         with o2: platoon = st.toggle("投打對決優勢 (Platoon Adv.)", value=False)
