@@ -5,7 +5,7 @@ import streamlit as st
 # 1. 頁面基本設定 (開啟寬螢幕模式 layout="wide")
 # ==========================================
 st.set_page_config(
-    page_title="棒球動態決策支援中心",
+    page_title="棒球動態決策支援系統",
     page_icon="⚾",
     layout="wide",
     initial_sidebar_state="expanded"
