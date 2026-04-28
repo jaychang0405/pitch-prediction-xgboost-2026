@@ -274,8 +274,8 @@ if app_mode == t("mode_pitch"):
         res_c1, res_c2 = st.columns([1, 1])
         with res_c1:
             st.info("模型預測機率")
-            st.metric(label="🥇 首選預測球種", value=UI_NAMES.get(best_pitch_raw, best_pitch_raw), delta=f"{best_prob:.1f}%")
-            st.metric(label="🥈 備用引誘球種", value=UI_NAMES.get(second_pitch_raw, second_pitch_raw), delta=f"{second_prob:.1f}%", delta_color="off")
+            st.metric(label="1. 首選預測球種", value=UI_NAMES.get(best_pitch_raw, best_pitch_raw), delta=f"{best_prob:.1f}%")
+            st.metric(label="2. 備用引誘球種", value=UI_NAMES.get(second_pitch_raw, second_pitch_raw), delta=f"{second_prob:.1f}%", delta_color="off")
             df_chart = pd.DataFrame({"Pitch Type": [UI_NAMES.get(c, c) for c in final_classes], "Probability (%)": final_probs}).set_index("Pitch Type")
             st.bar_chart(df_chart)
 
