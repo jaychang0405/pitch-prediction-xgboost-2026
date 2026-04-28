@@ -195,14 +195,14 @@ with c6:
 # 模式 A: 球種預測
 # ------------------------------------------
 if app_mode == t("mode_pitch"):
-    st.markdown("#### ⚾ 球種序列特徵")
+    st.markdown("#### 球種序列特徵")
     c7, c8 = st.columns(2)
     with c7: prev_pitch = st.selectbox("前一球球種", ["首球", "直球系", "滑/卡系", "曲球", "變速/指叉系"])
     with c8: prev_outcome = st.selectbox("前一球結果", ["First_Pitch", "Ball", "Strike", "Foul", "In-Play"])
     st.markdown("---")
 
     if st.button(" 開始預測球種與位置", use_container_width=True):
-        st.success(f" 分析完成！投手：{clean_pitcher} 🆚 打者：{clean_batter}")
+        st.success(f" 分析完成！投手：{clean_pitcher} vs 打者：{clean_batter}")
         
         # 預設數據
         ui_predicted_name, ui_secondary_name = "直球系 (Fastball)", "變速/指叉系 (Changeup)"
@@ -247,8 +247,8 @@ if app_mode == t("mode_pitch"):
         res_col1, res_col2 = st.columns([1, 1])
         with res_col1:
             st.info("模型預測數據")
-            st.metric(label="🥇 首選建議球種", value=ui_predicted_name, delta=f"{predicted_prob:.1f}%")
-            st.metric(label="🥈 備用引誘球種", value=ui_secondary_name, delta=f"{secondary_prob:.1f}%", delta_color="off")
+            st.metric(label="1. 首選建議球種", value=ui_predicted_name, delta=f"{predicted_prob:.1f}%")
+            st.metric(label="2. 備用引誘球種", value=ui_secondary_name, delta=f"{secondary_prob:.1f}%", delta_color="off")
             df_chart = pd.DataFrame({"球種": chart_names, "機率(%)": chart_probs}).set_index("球種")
             st.bar_chart(df_chart)
         with res_col2:
