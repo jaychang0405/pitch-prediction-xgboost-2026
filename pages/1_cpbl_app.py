@@ -21,42 +21,6 @@ st.set_page_config(page_title="CPBL 動態決策支援", page_icon="🇹🇼", l
 # ==========================================
 DATA_PATH = "data_cpbl"  # 設定為獨立資料夾
 
-# ==========================================
-# 🔐 全域密碼鎖系統
-# ==========================================
-def check_password():
-    # 1. 如果是第一次進來，預設為未登入 (False)
-    if "password_correct" not in st.session_state:
-        st.session_state["password_correct"] = False
-
-    # 2. 如果尚未登入，顯示輸入框並隱藏其他內容
-    if not st.session_state["password_correct"]:
-        st.title("🔒 棒球動態決策支援中心")
-        st.info("系統已鎖定，請輸入專屬授權密碼以進入預測系統。")
-        
-        pwd = st.text_input("🔑 存取密碼", type="password")
-        
-        if pwd == "20050405":  # 你的通關密碼
-            st.session_state["password_correct"] = True
-            st.rerun()  # 密碼正確，瞬間重新載入畫面
-        elif pwd:
-            st.error("❌ 密碼錯誤，請重新確認。")
-        
-        # 3. 施展魔法：用 CSS 把左側選單完全隱藏，防止未登入者偷看或點擊
-        st.markdown(
-            """
-            <style>
-                [data-testid="collapsedControl"] {display: none;}
-                [data-testid="stSidebar"] {display: none;}
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
-        st.stop()  # 🛑 程式會停在這裡，下面的內容完全不會顯示！
-
-# 啟動密碼檢查
-check_password()
-
 def clean_name(name):
     """輔助函式：去除掉下拉選單中為了美觀加上的火焰符號"""
     if isinstance(name, str):
@@ -71,15 +35,15 @@ LANG = {
         "title": "中職動態決策支援系統",
         "subtitle": "基於 XGBoost 的球種預測與上壘率 (OBP) 分析",
         "menu": "🔍 功能選單",
-        "mode_pitch": "🎯 預測下一球球種",
-        "mode_obp": "🏃‍♂️ 預測打擊結果 (上壘率)",
+        "mode_pitch": " 預測下一球球種",
+        "mode_obp": " 預測打擊結果 (上壘率)",
     },
     "en": {
         "title": "CPBL Dynamic Decision Support",
         "subtitle": "Pitch Prediction & OBP Analysis based on XGBoost",
         "menu": "🔍 Menu",
-        "mode_pitch": "🎯 Predict Next Pitch",
-        "mode_obp": "🏃‍♂️ Predict At-Bat Outcome (OBP)",
+        "mode_pitch": " Predict Next Pitch",
+        "mode_obp": " Predict At-Bat Outcome (OBP)",
     }
 }
 
@@ -160,30 +124,42 @@ def draw_strike_zone(predicted_pitch_en, prob):
     return fig
 
 # ==========================================
-# 4. 側邊欄與標題佈局
+# 4. 頁面標題列 (含右上角語言切換)
 # ==========================================
-lang_choice = st.sidebar.radio("🌐 Language / 語言", ["繁體中文", "English"], horizontal=True)
-l = "zh" if lang_choice == "繁體中文" else "en"
-def t(key): return LANG[l].get(key, key)
+# 使用 columns 將畫面切分為 Logo、標題、語言選擇器
+# 比例分配：1 (Logo) : 6 (標題) : 2 (語言)
+col_logo, col_title, col_lang = st.columns([1, 6, 2])
 
-st.sidebar.title(t("menu"))
-app_mode = st.sidebar.radio("", [t("mode_pitch"), t("mode_obp")])
+with col_lang:
+    # 語言選擇移至此處，使用 label_visibility="collapsed" 隱藏標籤
+    lang_choice = st.radio(
+        "🌐 Language", 
+        ["繁體中文", "English"], 
+        horizontal=True, 
+        label_visibility="collapsed"
+    )
+    l = "zh" if lang_choice == "繁體中文" else "en"
+    def t(key): return LANG[l].get(key, key)
 
-col_logo, col_title = st.columns([1, 8])
 with col_logo:
     try:
         st.image(os.path.join(DATA_PATH, "cpbl_icon.png"), width=100)
     except:
         st.write("⚾")
+
 with col_title:
     st.title(t("title"))
     st.markdown(f"**{t('subtitle')}**")
-st.markdown("---")
+
+# 側邊欄僅保留功能選單
+st.sidebar.title(t("menu"))
+app_mode = st.sidebar.radio("", [t("mode_pitch"), t("mode_obp")])
+st.sidebar.markdown("---")
 
 # ==========================================
 # 5. 共用情境輸入區塊 
 # ==========================================
-st.header("📊 輸入當下比賽情境")
+st.header(" 輸入當下比賽情境")
 
 # 動態切換下拉選單名單
 if app_mode == t("mode_pitch"):
@@ -225,8 +201,8 @@ if app_mode == t("mode_pitch"):
     with c8: prev_outcome = st.selectbox("前一球結果", ["First_Pitch", "Ball", "Strike", "Foul", "In-Play"])
     st.markdown("---")
 
-    if st.button("🚀 開始預測球種與位置", use_container_width=True):
-        st.success(f"✅ 分析完成！投手：{clean_pitcher} 🆚 打者：{clean_batter}")
+    if st.button(" 開始預測球種與位置", use_container_width=True):
+        st.success(f" 分析完成！投手：{clean_pitcher} 🆚 打者：{clean_batter}")
         
         # 預設數據
         ui_predicted_name, ui_secondary_name = "直球系 (Fastball)", "變速/指叉系 (Changeup)"
@@ -307,7 +283,7 @@ elif app_mode == t("mode_obp"):
     
     st.markdown("---")
 
-    if st.button("🚀 開始評估上壘風險", use_container_width=True):
+    if st.button(" 開始評估上壘風險", use_container_width=True):
         if obp_model is None:
             st.error("找不到模型檔案，請確認 `cpbl_obp_model.json` 已放置於 data_cpbl 資料夾中。")
         else:

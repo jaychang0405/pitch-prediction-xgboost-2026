@@ -12,53 +12,17 @@ st.set_page_config(
 )
 
 # ==========================================
-# 🔐 全域密碼鎖系統
-# ==========================================
-def check_password():
-    # 1. 如果是第一次進來，預設為未登入 (False)
-    if "password_correct" not in st.session_state:
-        st.session_state["password_correct"] = False
-
-    # 2. 如果尚未登入，顯示輸入框並隱藏其他內容
-    if not st.session_state["password_correct"]:
-        st.title("🔒 棒球動態決策支援中心")
-        st.info("系統已鎖定，請輸入專屬授權密碼以進入預測系統。")
-        
-        pwd = st.text_input("🔑 存取密碼", type="password")
-        
-        if pwd == "20050405":  # 你的通關密碼
-            st.session_state["password_correct"] = True
-            st.rerun()  # 密碼正確，瞬間重新載入畫面
-        elif pwd:
-            st.error("❌ 密碼錯誤，請重新確認。")
-        
-        # 3. 施展魔法：用 CSS 把左側選單完全隱藏，防止未登入者偷看或點擊
-        st.markdown(
-            """
-            <style>
-                [data-testid="collapsedControl"] {display: none;}
-                [data-testid="stSidebar"] {display: none;}
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
-        st.stop()  # 🛑 程式會停在這裡，下面的內容完全不會顯示！
-
-# 啟動密碼檢查
-check_password()
-
-# ==========================================
 # 2. Hero 區塊 (大標題與歡迎詞)
 # ==========================================
-st.title("⚾ 棒球動態決策支援中心")
-st.markdown("#### 即時戰術與上壘風險預測系統 (Powered by XGBoost)")
+st.title("⚾ 棒球動態決策支援系統")
+st.markdown("#### 即時球種與上壘風險預測系統 (Powered by XGBoost)")
 st.markdown("歡迎來到資料科學與棒球賽事的交會點。本系統結合歷史投打對決數據，為您提供即時的情境預測。")
 st.divider() # 水平分隔線
 
 # ==========================================
 # 3. 數據概覽面板 (Metrics)
 # ==========================================
-st.markdown("### 📊 系統運行狀態")
+st.markdown("### 系統運行狀態")
 # 建立 4 個等寬欄位
 m1, m2, m3, m4 = st.columns(4)
 
@@ -76,23 +40,23 @@ st.markdown("<br>", unsafe_allow_html=True) # 增加一點垂直空白
 # ==========================================
 # 4. 核心功能介紹卡片 (Columns & Info Boxes)
 # ==========================================
-st.markdown("### 🌟 核心預測模組")
+st.markdown("### 核心預測模組")
 col1, col2 = st.columns(2)
 
 with col1:
     # 使用 info 創造淺藍色卡片感
     st.info("#### CPBL 中職預測系統")
     st.write("針對中華職棒本土與洋將特化的機器學習模型。")
-    st.write("- **🎯 球種預測**：根據局數、球數與前一球軌跡，預測投手下一球配球。")
-    st.write("- **🏃‍♂️ OBP 分析**：結合打者歷史上壘率與當前壘包狀態，評估高張力打席。")
+    st.write("- **球種預測**：根據局數、球數與前一球軌跡，預測投手下一球配球。")
+    st.write("- **OBP 分析**：結合打者歷史上壘率與當前壘包狀態，評估高張力打席。")
     st.caption("👈 請於左側選單點擊進入 CPBL 模組")
 
 with col2:
     # 使用 success 創造淺綠色卡片感
     st.success("#### MLB 大聯盟預測系統")
-    st.write("基於 Statcast 進階數據的大聯盟級別戰術分析。")
-    st.write("- **🔥 頂級對決**：包含大聯盟頂級投手的球路特徵解析。")
-    st.write("- **📈 進階特徵**：整合更豐富的賽事數據與情境參數。")
+    st.write("基於 Statcast 進階數據的MLB戰術分析。")
+    st.write("- **頂級對決**：包含大聯盟頂級投手的球路特徵解析。")
+    st.write("- **進階特徵**：整合更豐富的賽事數據與情境參數。")
     st.caption("👈 請於左側選單點擊進入 MLB 模組")
 
 st.divider()
@@ -102,7 +66,6 @@ st.divider()
 # ==========================================
 with st.expander("📖 系統使用指南與注意事項 (點擊展開)"):
     st.markdown("""
-    * **系統解鎖**：進入預測模組後，請輸入通關密碼解鎖預測功能。
     * **情境設定**：請確實依照實際比賽情況（如好壞球、出局數、壘上情形）進行設定，以獲得最準確的預測機率。
     * **動態數據**：系統會根據您選擇的球員，自動至背景資料庫 (`_db.csv`) 撈取歷史數據作為模型特徵。
     * **免責聲明**：本系統預測結果僅供棒球數據研究與觀賽娛樂參考，不代表絕對賽事結果。

@@ -22,59 +22,23 @@ st.set_page_config(page_title="MLB Dynamic Prediction", layout="wide")
 DATA_PATH = "data_mlb"
 
 # ==========================================
-# 🔐 全域密碼鎖系統
-# ==========================================
-def check_password():
-    # 1. 如果是第一次進來，預設為未登入 (False)
-    if "password_correct" not in st.session_state:
-        st.session_state["password_correct"] = False
-
-    # 2. 如果尚未登入，顯示輸入框並隱藏其他內容
-    if not st.session_state["password_correct"]:
-        st.title("🔒 棒球動態決策支援中心")
-        st.info("系統已鎖定，請輸入專屬授權密碼以進入預測系統。")
-        
-        pwd = st.text_input("🔑 存取密碼", type="password")
-        
-        if pwd == "20050405":  # 你的通關密碼
-            st.session_state["password_correct"] = True
-            st.rerun()  # 密碼正確，瞬間重新載入畫面
-        elif pwd:
-            st.error("❌ 密碼錯誤，請重新確認。")
-        
-        # 3. 施展魔法：用 CSS 把左側選單完全隱藏，防止未登入者偷看或點擊
-        st.markdown(
-            """
-            <style>
-                [data-testid="collapsedControl"] {display: none;}
-                [data-testid="stSidebar"] {display: none;}
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
-        st.stop()  # 🛑 程式會停在這裡，下面的內容完全不會顯示！
-
-# 啟動密碼檢查
-check_password() 
-
-# ==========================================
-# 1. 雙語字典設定
+# 1. 雙語字典設定 (保持不變)
 # ==========================================
 LANG = {
     "zh": {
-        "title": "MLB 大聯盟動態決策支援",
+        "title": "MLB 動態決策支援系統",
         "subtitle": "基於 Statcast 與 XGBoost 的即時戰術分析",
         "menu": "🔍 功能選單",
         "mode_pitch": "🎯 預測下一球球種",
         "mode_obp": "🏃‍♂️ 預測打擊結果 (上壘率)",
-        "input_header": "📊 輸入當下情境",
+        "input_header": "📊 輸入當下比賽情境",
         "pitcher": "3. 投手 (Pitcher)",
         "batter": "3. 打者 (Batter)",
         "btn_pitch": "🚀 開始預測球種",
         "btn_obp": "🚀 評估上壘風險 (OBP)",
     },
     "en": {
-        "title": "🇺🇸 MLB Dynamic Decision Support",
+        "title": "MLB Dynamic Decision Support",
         "subtitle": "Real-time Tactical Analysis based on Statcast & XGBoost",
         "menu": "🔍 Menu",
         "mode_pitch": "🎯 Predict Next Pitch",
@@ -88,7 +52,7 @@ LANG = {
 }
 
 # ==========================================
-# 2. 防彈檔案載入與資料庫準備
+# 2. 輔助函式 (讀取、載入、畫圖) 保持不變
 # ==========================================
 def safe_read_csv(filename):
     path = os.path.join(DATA_PATH, filename)
@@ -169,33 +133,40 @@ def draw_strike_zone(predicted_pitch_en, prob):
     return fig
 
 # ==========================================
-# 3. 側邊欄與標題
+# 3. 頁面標題列 (含右上角語言切換)
 # ==========================================
-lang_choice = st.sidebar.radio("🌐 Language / 語言", ["繁體中文", "English"], horizontal=True)
-l = "zh" if lang_choice == "繁體中文" else "en"
-def t(key): return LANG[l].get(key, key)
+# 使用 columns 將畫面切分為 Logo、標題、語言選擇器
+# 比例分配：1 (Logo) : 6 (標題) : 2 (語言)
+col_logo, col_title, col_lang = st.columns([1, 6, 2])
 
-# 使用 columns 將畫面切分，比例為 1:8
-col_logo, col_title = st.columns([1, 8])
+with col_lang:
+    # 語言選擇移至此處，使用 label_visibility="collapsed" 隱藏標籤
+    lang_choice = st.radio(
+        "🌐 Language", 
+        ["繁體中文", "English"], 
+        horizontal=True, 
+        label_visibility="collapsed"
+    )
+    l = "zh" if lang_choice == "繁體中文" else "en"
+    def t(key): return LANG[l].get(key, key)
 
 with col_logo:
     try:
-        # 嘗試讀取本地端的 Logo 檔案 (請將圖片放在 data_mlb 資料夾下)
         st.image(os.path.join(DATA_PATH, "mlb_logo.png"), width=100)
     except:
-        # 如果你還沒下載圖片，系統會自動抓取維基百科上的 MLB 官方 Logo 網址作為備用！
         st.image("https://upload.wikimedia.org/wikipedia/commons/a/a6/Major_League_Baseball_logo.svg", width=100)
 
 with col_title:
     st.title(t("title"))
     st.markdown(f"**{t('subtitle')}**")
 
+# 側邊欄僅保留功能選單
 st.sidebar.title(t("menu"))
 app_mode = st.sidebar.radio("", [t("mode_pitch"), t("mode_obp")])
 st.sidebar.markdown("---")
 
 # ==========================================
-# 4. 主畫面 - 情境輸入區塊 
+# 4. 主畫面 - 情境輸入區塊 (邏輯與原本相同)
 # ==========================================
 st.header(t("input_header"))
 
@@ -214,14 +185,12 @@ with col_inputs:
         on_1b = 1 if "一壘 (1B)" in bases else 0
         on_2b = 1 if "二壘 (2B)" in bases else 0
         on_3b = 1 if "三壘 (3B)" in bases else 0
-        
-        # ⚾ 計算 12 號關鍵特徵：runners_on_base & base_state_code
         runners_on_base = on_1b + on_2b + on_3b 
-        base_state_code = (on_1b * 1) + (on_2b * 2) + (on_3b * 4) # 完美轉換為 0~7 的組合編碼
+        base_state_code = (on_1b * 1) + (on_2b * 2) + (on_3b * 4) 
         
     with c_pd1:
         if app_mode == t("mode_pitch"): p_throws = st.selectbox("投手慣用手", ["R", "L"])
-        else: score_diff = st.number_input("比分差", value=0, help="主隊減客隊，領先為正")
+        else: score_diff = st.number_input("比分差", value=0)
     with c_pd2:
         if app_mode == t("mode_pitch"): stand = st.selectbox("打者站位", ["R", "L"])
         else: pitch_count = st.number_input("用球數", 1, 150, 15)
@@ -254,16 +223,11 @@ with col_avatars:
 st.markdown("---")
 
 # ==========================================
-# 5. 真實 XGBoost 預測邏輯
+# 5. 真實 XGBoost 預測邏輯 (保持不變)
 # ==========================================
-
-# ------------------------------------------
-# 模式 A: 球種預測
-# ------------------------------------------
 if app_mode == t("mode_pitch"):
     st.subheader(t("mode_pitch"))
     if st.button(t("btn_pitch"), use_container_width=True):
-        
         final_classes = mlb_classes if mlb_classes else ["Changeup", "Curveball", "Fastball_System", "Slider_Cutter"]
         final_probs = [10.0, 15.0, 50.0, 25.0]
 
@@ -296,7 +260,7 @@ if app_mode == t("mode_pitch"):
                 final_probs = [float(p * 100) for p in probs_array]
                 st.success("✅ Statcast 大聯盟真實數據分析完成！")
             except Exception as e:
-                st.error(f"⚠️ 預測失敗，顯示模擬數據。錯誤訊息: {e}")
+                st.error(f"⚠️ 預測失敗。錯誤訊息: {e}")
 
         top_indices = np.argsort(final_probs)[::-1]
         best_idx, second_idx = top_indices[0], top_indices[1]
@@ -320,23 +284,19 @@ if app_mode == t("mode_pitch"):
             fig = draw_strike_zone(best_pitch_raw.split('_')[0], best_prob)
             st.pyplot(fig)
 
-# ------------------------------------------
-# 模式 B: 上壘率預測 (修復版: 補齊 12 個特徵)
-# ------------------------------------------
 elif app_mode == t("mode_obp"):
     st.subheader(t("mode_obp"))
     if st.button(t("btn_obp"), use_container_width=True):
         if not HAS_XGB or not obp_model:
-            st.error("找不到模型檔案 (xgb_obp_model.json)，請確認已放置於 data_mlb 資料夾中。")
+            st.error("找不到模型檔案，請檢查 data_mlb 資料夾。")
         else:
             hist_b_obp = obp_db_dict["b"].get(str(batter_id), 0.315)
             hist_p_obp = obp_db_dict["p"].get(str(pitcher_id), 0.315)
             
             clean_batter_name = selected_batter.replace("🔥 ", "")
             clean_pitcher_name = selected_pitcher.replace("🔥 ", "")
-            st.info(f"💡 數據庫載入成功：{clean_batter_name} 歷史 OBP ({hist_b_obp:.3f}) / {clean_pitcher_name} 被上壘率 ({hist_p_obp:.3f})")
+            st.info(f"💡 數據庫載入成功：{clean_batter_name} OBP ({hist_b_obp:.3f}) / {clean_pitcher_name} 被上壘率 ({hist_p_obp:.3f})")
 
-            # 補齊 12 個特徵：最後加上 base_state_code
             feature_names = ['balls', 'strikes', 'outs_when_up', 'inning', 'score_diff', 
                              'runners_on_base', 'pitch_count', 'batter_hist_obp', 
                              'pitcher_hist_obp_allowed', 'is_home_team', 'platoon_advantage', 'base_state_code']
@@ -355,8 +315,8 @@ elif app_mode == t("mode_obp"):
                 st.metric(label=f"預測 {clean_batter_name} 該打席上壘機率 (xOBP)", value=f"{prob:.1%}")
                 
                 if prob > 0.33:
-                    st.error("🚨 高上壘風險！打者具備高度優勢，建議投手採取邊角引誘球策略。")
+                    st.error("🚨 高上壘風險！")
                 else:
-                    st.success("🟢 投手佔優勢：出局機率較高，可積極攻擊好球帶。")
+                    st.success("🟢 投手佔優勢。")
             except Exception as e:
-                st.error(f"⚠️ OBP 模型推論失敗，請檢查資料格式。錯誤訊息: {e}")
+                st.error(f"⚠️ OBP 模型推論失敗。錯誤訊息: {e}")
