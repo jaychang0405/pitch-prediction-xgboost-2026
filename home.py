@@ -6,7 +6,7 @@ import streamlit as st
 # ==========================================
 st.set_page_config(
     page_title="棒球動態決策支援系統",
-    page_icon="⚾",
+    page_icon="data_cpbl/tennis-ball.svg",
     layout="wide",
     initial_sidebar_state="expanded"
 )

@@ -14,13 +14,17 @@ try:
 except ImportError:
     HAS_XGB = False
 
-st.set_page_config(page_title="CPBL 動態決策支援", page_icon="🇹🇼", layout="wide")
+DATA_PATH = "data_cpbl"  # 設定為獨立資料夾
+
+st.set_page_config(
+    page_title="CPBL 動態決策支援系統",
+    page_icon=os.path.join(DATA_PATH, "tennis-ball.svg"),
+    layout="wide"
+)
 
 # ==========================================
 # 0. 密碼鎖與路徑設定
 # ==========================================
-DATA_PATH = "data_cpbl"  # 設定為獨立資料夾
-
 def clean_name(name):
     """輔助函式：去除掉下拉選單中為了美觀加上的火焰符號"""
     if isinstance(name, str):

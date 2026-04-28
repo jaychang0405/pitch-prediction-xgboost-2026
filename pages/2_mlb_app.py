@@ -14,12 +14,16 @@ try:
 except ImportError:
     HAS_XGB = False
 
-st.set_page_config(page_title="MLB Dynamic Prediction", layout="wide")
-
 # ==========================================
-# 0. 密碼鎖與路徑設定
+# 0. 檔案路徑設定
 # ==========================================
 DATA_PATH = "data_mlb"
+
+st.set_page_config(
+    page_title="MLB Dynamic Prediction System",
+    page_icon="data_cpbl/tennis-ball.svg",
+    layout="wide"
+)
 
 # ==========================================
 # 1. 雙語字典設定 (保持不變)
