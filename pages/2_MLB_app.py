@@ -7,6 +7,7 @@ import json
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import random
+import plotly.graph_objects as go
 
 try:
     import xgboost as xgb
@@ -119,21 +120,83 @@ pitch_model, obp_model = load_mlb_models()
 def get_headshot_url(player_id):
     return f"https://midfield.mlbstatic.com/v1/people/{player_id}/spots/120"
 
-def draw_strike_zone(predicted_pitch_en, prob):
-    fig, ax = plt.subplots(figsize=(4, 4))
-    if "Fastball" in predicted_pitch_en: r, c = random.choice([(0,0), (0,1), (0,2), (1,0), (1,1), (1,2)])
-    elif "Changeup" in predicted_pitch_en: r, c = random.choice([(2,0), (2,1), (2,2)])
-    else: r, c = random.choice([(2,0), (2,2), (1,0), (1,2)])
-    for row in range(3):
-        for col in range(3):
-            y, x = 2 - row, col
-            if row == r and col == c:
-                ax.add_patch(patches.Rectangle((x, y), 1, 1, lw=3, ec='#cc0000', fc='#ff9999'))
-                ax.text(x+0.5, y+0.5, f"{predicted_pitch_en}\n{prob:.1f}%", ha='center', va='center', weight='bold')
-            else:
-                ax.add_patch(patches.Rectangle((x, y), 1, 1, lw=1, ec='#a0c4ff', fc='#f0f8ff'))
-                ax.text(x+0.5, y+0.5, f"{row*3+col+1}", ha='center', va='center', color='grey', alpha=0.5)
-    ax.set_xlim(-0.5, 3.5); ax.set_ylim(-0.5, 3.5); ax.axis('off')
+def draw_strike_zone_plotly(predicted_pitch_en, prob):
+    # 決定目標格子
+    if "Fastball" in predicted_pitch_en:
+        target_id = random.choice([2, 5, 4, 6])
+    elif "Changeup" in predicted_pitch_en:
+        target_id = random.choice([7, 8, 9])
+    else:
+        target_id = random.choice([1, 3, 7, 9])
+        
+    fig = go.Figure()
+
+    # 1. 計算並畫出 9 個完美相連的格子
+    x_centers, y_centers, texts, hover_texts, text_colors = [], [], [], [], []
+    
+    for i in range(1, 10):
+        # 計算網格的左下角與右上角座標 (確保 100% 相連無縫隙)
+        col = (i - 1) % 3
+        row = 2 - ((i - 1) // 3)
+        
+        # 記錄中心點供文字使用
+        x_centers.append(col + 0.5)
+        y_centers.append(row + 0.5)
+        
+        is_target = (i == target_id)
+        
+        if is_target:
+            texts.append(f"<b>{predicted_pitch_en}</b><br>{prob:.1f}%")
+            hover_texts.append(f"區域: {i}<br>預測落點: {predicted_pitch_en}")
+            text_colors.append("#ffffff")
+            
+            # 畫高亮目標的紅框與背景
+            fig.add_shape(
+                type="rect",
+                x0=col, y0=row, x1=col+1, y1=row+1,
+                fillcolor="rgba(204, 0, 0, 0.4)", # 紅色半透明
+                line=dict(color="#ff4d4d", width=3),
+                layer="below"
+            )
+        else:
+            texts.append(str(i))
+            hover_texts.append(f"區域: {i}<br>非主要落點")
+            text_colors.append("rgba(255, 255, 255, 0.3)")
+            
+            # 畫一般區域的藍框與背景
+            fig.add_shape(
+                type="rect",
+                x0=col, y0=row, x1=col+1, y1=row+1,
+                fillcolor="rgba(66, 165, 245, 0.05)", # 藍色極微透明
+                line=dict(color="#42a5f5", width=1),
+                layer="below"
+            )
+
+    # 2. 將文字與 Hover 效果疊加上去
+    fig.add_trace(go.Scatter(
+        x=x_centers, 
+        y=y_centers,
+        mode="text",
+        text=texts,
+        hoverinfo="text",
+        hovertext=hover_texts,
+        textfont=dict(color=text_colors, size=15),
+        showlegend=False
+    ))
+
+    # 3. 關鍵設定：鎖定比例 (1:1) 並隱藏座標軸
+    fig.update_layout(
+        width=350, height=350,
+        # scaleanchor="x" 與 scaleratio=1 保證它永遠是正方形
+        xaxis=dict(range=[0, 3], showgrid=False, zeroline=False, visible=False, fixedrange=True),
+        yaxis=dict(range=[0, 3], showgrid=False, zeroline=False, visible=False, fixedrange=True, scaleanchor="x", scaleratio=1),
+        margin=dict(l=10, r=10, t=40, b=10),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        hovermode="closest",
+        title=dict(text="AI 預測落點 (Strike Zone)", x=0.5, font=dict(size=16, color="#e0e0e0"))
+    )
+    
     return fig
 
 # ==========================================
@@ -284,9 +347,11 @@ if app_mode == t("mode_pitch"):
             st.bar_chart(df_chart)
 
         with res_c2:
-            st.info("九宮格落點預測 (模擬位置)")
-            fig = draw_strike_zone(best_pitch_raw.split('_')[0], best_prob)
-            st.pyplot(fig)
+            st.info("九宮格落點預測 (互動模式)")
+            # 呼叫新的 Plotly 畫圖函式
+            fig = draw_strike_zone_plotly(best_pitch_raw.split('_')[0], best_prob)
+            # 使用 st.plotly_chart 顯示，並隱藏右上角的工具列讓畫面更乾淨
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 elif app_mode == t("mode_obp"):
     st.subheader(t("mode_obp"))

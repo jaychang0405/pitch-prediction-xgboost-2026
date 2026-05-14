@@ -1,0 +1,7 @@
+[theme]
+# 專業深色戰情室主題
+primaryColor = "#42a5f5"          # 亮藍色 (主要按鈕與強調色)
+backgroundColor = "#0e1117"       # 極深藍背景 (增加高級感)
+secondaryBackgroundColor = "#161b22" # 側邊欄與區塊背景
+textColor = "#fafafa"             # 近純白文字
+font = "sans serif"               # 現代感無襯線字體

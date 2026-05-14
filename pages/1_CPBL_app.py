@@ -4,9 +4,8 @@ import pandas as pd
 import numpy as np
 import os
 import json
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 import random
+import plotly.graph_objects as go
 
 try:
     import xgboost as xgb
@@ -99,43 +98,93 @@ data = load_cpbl_data()
 pitch_model, obp_model = load_models()
 
 # ==========================================
-# 3. 輔助函式：九宮格視覺化 (球種用)
+# 3. 輔助函式：九宮格視覺化 (Plotly 互動版)
 # ==========================================
-def draw_strike_zone(predicted_pitch_en, prob):
-    fig, ax = plt.subplots(figsize=(5, 5))
+def draw_strike_zone_plotly(predicted_pitch_en, prob):
+    # 決定目標格子
     if "Fastball" in predicted_pitch_en:
-        target_row, target_col = random.choice([(0,0), (0,1), (0,2), (1,0), (1,1), (1,2)])
+        target_id = random.choice([2, 5, 4, 6])
     elif "Changeup" in predicted_pitch_en or "Splitter" in predicted_pitch_en:
-        target_row, target_col = random.choice([(2,0), (2,1), (2,2)])
+        target_id = random.choice([7, 8, 9])
     else:
-        target_row, target_col = random.choice([(2,0), (2,2), (1,0), (1,2)])
+        target_id = random.choice([1, 3, 7, 9])
+        
+    fig = go.Figure()
 
-    for row in range(3):
-        for col in range(3):
-            y_pos, x_pos = 2 - row, col
-            if row == target_row and col == target_col:
-                face_color, edge_color, lw = '#ff9999', '#cc0000', 3
-                ax.text(x_pos + 0.5, y_pos + 0.5, f"{predicted_pitch_en}\n{prob:.1f}%", ha='center', va='center', fontweight='bold', fontsize=12, color='black')
-            else:
-                face_color, edge_color, lw = '#f0f8ff', '#a0c4ff', 1
-                ax.text(x_pos + 0.5, y_pos + 0.5, f"{row*3 + col + 1}", ha='center', va='center', fontsize=10, color='grey', alpha=0.5)
+    # 1. 計算並畫出 9 個完美相連的格子
+    x_centers, y_centers, texts, hover_texts, text_colors = [], [], [], [], []
+    
+    for i in range(1, 10):
+        # 計算網格的左下角與右上角座標 (確保 100% 相連無縫隙)
+        col = (i - 1) % 3
+        row = 2 - ((i - 1) // 3)
+        
+        # 記錄中心點供文字使用
+        x_centers.append(col + 0.5)
+        y_centers.append(row + 0.5)
+        
+        is_target = (i == target_id)
+        
+        if is_target:
+            texts.append(f"<b>{predicted_pitch_en}</b><br>{prob:.1f}%")
+            hover_texts.append(f"區域: {i}<br>預測落點: {predicted_pitch_en}")
+            text_colors.append("#ffffff")
+            
+            # 畫高亮目標的紅框與背景
+            fig.add_shape(
+                type="rect",
+                x0=col, y0=row, x1=col+1, y1=row+1,
+                fillcolor="rgba(204, 0, 0, 0.4)", # 紅色半透明
+                line=dict(color="#ff4d4d", width=3),
+                layer="below"
+            )
+        else:
+            texts.append(str(i))
+            hover_texts.append(f"區域: {i}<br>非主要落點")
+            text_colors.append("rgba(255, 255, 255, 0.3)")
+            
+            # 畫一般區域的藍框與背景
+            fig.add_shape(
+                type="rect",
+                x0=col, y0=row, x1=col+1, y1=row+1,
+                fillcolor="rgba(66, 165, 245, 0.05)", # 藍色極微透明
+                line=dict(color="#42a5f5", width=1),
+                layer="below"
+            )
 
-            rect = patches.Rectangle((x_pos, y_pos), 1, 1, linewidth=lw, edgecolor=edge_color, facecolor=face_color)
-            ax.add_patch(rect)
+    # 2. 將文字與 Hover 效果疊加上去
+    fig.add_trace(go.Scatter(
+        x=x_centers, 
+        y=y_centers,
+        mode="text",
+        text=texts,
+        hoverinfo="text",
+        hovertext=hover_texts,
+        textfont=dict(color=text_colors, size=15),
+        showlegend=False
+    ))
 
-    ax.set_xlim(-0.5, 3.5); ax.set_ylim(-0.5, 3.5); ax.axis('off')
-    ax.set_title("Predicted Pitch & Location", fontweight='bold', fontsize=14)
+    # 3. 關鍵設定：鎖定比例 (1:1) 並隱藏座標軸
+    fig.update_layout(
+        width=350, height=350,
+        # scaleanchor="x" 與 scaleratio=1 保證它永遠是正方形
+        xaxis=dict(range=[0, 3], showgrid=False, zeroline=False, visible=False, fixedrange=True),
+        yaxis=dict(range=[0, 3], showgrid=False, zeroline=False, visible=False, fixedrange=True, scaleanchor="x", scaleratio=1),
+        margin=dict(l=10, r=10, t=40, b=10),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        hovermode="closest",
+        title=dict(text="AI 預測落點 (Strike Zone)", x=0.5, font=dict(size=16, color="#e0e0e0"))
+    )
+    
     return fig
 
 # ==========================================
 # 4. 頁面標題列 (含右上角語言切換)
 # ==========================================
-# 使用 columns 將畫面切分為 Logo、標題、語言選擇器
-# 比例分配：1 (Logo) : 6 (標題) : 2 (語言)
 col_logo, col_title, col_lang = st.columns([1, 6, 2])
 
 with col_lang:
-    # 語言選擇移至此處，使用 label_visibility="collapsed" 隱藏標籤
     lang_choice = st.radio(
         "🌐 Language", 
         ["繁體中文", "English"], 
@@ -155,7 +204,6 @@ with col_title:
     st.title(t("title"))
     st.markdown(f"**{t('subtitle')}**")
 
-# 側邊欄僅保留功能選單
 st.sidebar.title(t("menu"))
 app_mode = st.sidebar.radio("", [t("mode_pitch"), t("mode_obp")])
 st.sidebar.markdown("---")
@@ -165,7 +213,6 @@ st.sidebar.markdown("---")
 # ==========================================
 st.header(" 輸入當下比賽情境")
 
-# 動態切換下拉選單名單
 if app_mode == t("mode_pitch"):
     p_names = data["pitch"]["p"]["player_name"].tolist() if "p" in data["pitch"] else ["無資料"]
     b_names = data["pitch"]["b"]["player_name"].tolist() if "b" in data["pitch"] else ["無資料"]
@@ -181,7 +228,7 @@ with c2:
 with c3:
     strikes = st.selectbox("3. 好球 / Strikes", [0, 1, 2])
 with c4:
-    outs = st.selectbox("4. 出局數 / Outs", [0, 1, 2]) # 兩模式共用出局數
+    outs = st.selectbox("4. 出局數 / Outs", [0, 1, 2]) 
 
 c5, c6 = st.columns(2)
 with c5:
@@ -208,7 +255,6 @@ if app_mode == t("mode_pitch"):
     if st.button(" 開始預測球種與位置", use_container_width=True):
         st.success(f" 分析完成！投手：{clean_pitcher} vs 打者：{clean_batter}")
         
-        # 預設數據
         ui_predicted_name, ui_secondary_name = "直球系 (Fastball)", "變速/指叉系 (Changeup)"
         plot_predicted_name_en, predicted_prob, secondary_prob = "Fastball", 52.5, 28.3
         chart_names = [ui_predicted_name, ui_secondary_name, "滑/卡系 (Slider/Cutter)", "曲球 (Curveball)"]
@@ -256,9 +302,10 @@ if app_mode == t("mode_pitch"):
             df_chart = pd.DataFrame({"球種": chart_names, "機率(%)": chart_probs}).set_index("球種")
             st.bar_chart(df_chart)
         with res_col2:
-            st.info("九宮格視覺化 (Strike Zone)")
-            fig = draw_strike_zone(plot_predicted_name_en, predicted_prob)
-            st.pyplot(fig)
+            st.info("九宮格視覺化 (Strike Zone - 互動模式)")
+            # 替換為 Plotly 顯示元件
+            fig = draw_strike_zone_plotly(plot_predicted_name_en, predicted_prob)
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 # ------------------------------------------
 # 模式 B: 上壘率預測
@@ -291,13 +338,11 @@ elif app_mode == t("mode_obp"):
         if obp_model is None:
             st.error("找不到模型檔案，請確認 `cpbl_obp_model.json` 已放置於 data_cpbl 資料夾中。")
         else:
-            # 查表：若遇新秀或查無資料則代入 CPBL 預設平均上壘率 0.330
             hist_b_obp = data["obp_db_dict"]["b"].get(clean_batter, 0.330)
             hist_p_obp = data["obp_db_dict"]["p"].get(clean_pitcher, 0.330)
             
             st.info(f"系統自動偵測帶入：{clean_batter} 歷史 OBP ({hist_b_obp:.3f}) / {clean_pitcher} 歷史被 OBP ({hist_p_obp:.3f})")
 
-            # 嚴格對齊組員原本的 12 項特徵順序與欄位名稱
             feature_names = ['balls', 'strikes', 'outs_when_up', 'inning', 'score_diff', 'runners_on_base', 
                              'pitch_count', 'batter_hist_obp', 'pitcher_hist_obp_allowed', 'is_home_team', 
                              'platoon_advantage', 'base_state_code']
@@ -308,12 +353,10 @@ elif app_mode == t("mode_obp"):
             ]
             
             try:
-                # 轉換為 DMatrix 並進行精準預測
                 df_input = pd.DataFrame([feature_values], columns=feature_names)
                 dmatrix = xgb.DMatrix(df_input)
                 prob = obp_model.predict(dmatrix)[0]
                 
-                # 顯示結果
                 st.metric(label=f"預測 {clean_batter} 該打席上壘機率 (xOBP)", value=f"{prob:.1%}")
                 
                 if prob > 0.35:
