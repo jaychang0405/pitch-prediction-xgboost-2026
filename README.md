@@ -1,5 +1,5 @@
 # pitch-obp-prediction-xgboost-2026
-> A bi-level ML system predicting MLB & CPBL pitch types using XGBoost. Features pitch tunneling metrics, class-weight balancing, and Brier Score calibration for reliable in-game decision support.
+> A bi-level ML system predicting MLB & CPBL pitch types & obp using XGBoost. Features pitch tunneling metrics, class-weight balancing, and Brier Score calibration for reliable in-game decision support.
 
 本專案結合**機器學習**與**棒球物理學**，針對美國大聯盟 (MLB) 與中華職棒 (CPBL) 開發的雙層決策支援系統。系統透過分析巨量逐球數據 (Pitch-by-Pitch Dynamics)，破解投手在賽局中的心理博弈，並即時提供球種預測與上壘率 (OBP) 風險評估。
 
@@ -21,3 +21,5 @@
 * **Machine Learning:** XGBoost, Scikit-learn, Pandas, NumPy
 * **Data Visualization:** Plotly (3D Interactive), Matplotlib, Seaborn
 * **Frontend / App Framework:** Streamlit
+
+**[點此進入 Prediction System 網頁版 (Streamlit Cloud)](https://pitch-obp-prediction.streamlit.app/)**
