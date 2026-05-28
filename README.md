@@ -1,33 +1,26 @@
 # pitch-prediction-xgboost-2026
 A bi-level ML system predicting MLB &amp; CPBL pitch types using XGBoost. Features pitch tunneling metrics, class-weight balancing, and Brier Score calibration for reliable in-game decision support.
 
-📋 專案名稱：CPBL 動態決策支援系統 - 本地端執行指南
-哈囉！這份指南會帶你把我們開發的「中職動態預測網頁」在你的電腦上跑起來。請按照以下步驟操作：
+> A bi-level ML system predicting MLB & CPBL pitch types using XGBoost. Features pitch tunneling metrics, class-weight balancing, and Brier Score calibration for reliable in-game decision support.
 
-⚙️ 事前準備
-請確保你的電腦已經安裝了 Python（建議版本 3.8 以上）。
+本專案結合**機器學習**與**棒球物理學**，針對美國大聯盟 (MLB) 與中華職棒 (CPBL) 開發的雙層決策支援系統。系統透過分析巨量逐球數據 (Pitch-by-Pitch Dynamics)，破解投手在賽局中的心理博弈，並即時提供球種預測與上壘率 (OBP) 風險評估。
 
-如果你還沒安裝過，可以到 Python 官網 下載安裝。
+## 核心技術與亮點 (Core Features)
 
-(Windows 用戶安裝時，請務必勾選「Add Python to PATH」)
+* **雙聯盟跨域驗證 (Cross-League Validation)**
+  統一特徵工程 pipeline，同時針對 MLB (Statcast) 與 CPBL 數據進行建模，驗證「上一球軌跡」與「好壞球數」在不同層級賽事中的戰術一致性。
+* **3D 共軌效應實驗室 (The Tunneling Illusion)**
+  內建互動式 3D 視覺化模組。精準還原直球與滑球在「打者決策點 (Commit Point)」前的重疊軌跡，解釋模型為何會產生與真實打者相同的視覺誤判。
+* **自訂懲罰矩陣 (Custom Class Weighting)**
+  針對直球佔比過高的資料不平衡問題，捨棄傳統自動平衡，設計專屬權重比例 (Fastball: 1.0, Slider/Changeup: 2.5, Curveball: 4.0)，成功將 Macro F1-Score 最大化，並維持超過 73% 的實戰 Top-2 準確率。
+* **嚴謹的機率校準 (Brier Score Calibration)**
+  在上壘率預測模組中，不只追求分類正確率，更利用 Brier Score 進行嚴格的機率校準，確保預測機率高度貼合真實賽局發生率。
+* **零資料洩漏 (Zero Data Leakage)**
+  採用嚴格的時序排序 (Temporal Sequencing)，確保特徵工程完全基於賽局當下的歷史狀態，避免未來數據污染。
 
-🚀 步驟 1：取得程式碼
-請打開你的終端機（Terminal 或命令提示字元 CMD），將專案從 GitHub 複製下來，並進入該資料夾：
+## 技術棧 (Tech Stack)
 
-📦 步驟 2：安裝必備套件
-我們的專案有使用到機器學習與網頁框架，請在終端機輸入以下指令，一次安裝所有需要的套件：
-
-pip install streamlit pandas numpy xgboost matplotlib
-
-⚾ 步驟 3：啟動系統
-套件安裝完成後，確認你仍在專案資料夾內，輸入以下指令啟動網頁：
-
-streamlit run cpbl_app.py 
-(註：如果主程式檔名不同，請把 cpbl_app.py 換成正確的檔名)
-
-🔓 步驟 4：解鎖與使用
-啟動成功後，你的瀏覽器會自動彈出網頁（網址通常是 http://localhost:8501）。
-
-因為系統有做保護，畫面上會出現密碼鎖。請輸入存取密碼：20050405。
-
-解鎖後，你就可以自由測試各項情境與九宮格預測了！
+* **Machine Learning:** XGBoost, Scikit-learn, Pandas, NumPy
+* **Data Visualization:** Plotly (3D Interactive), Matplotlib, Seaborn
+* **Frontend / App Framework:** Streamlit
+* **Cloud Architecture (Backend Support):** AWS (S3, EC2, Lambda, API Gateway, Cognito)
