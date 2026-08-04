@@ -2,6 +2,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 import numpy as np
+import ui_kit
 
 # ==========================================
 # 1. 頁面基本設定
@@ -11,25 +12,30 @@ st.set_page_config(
     layout="wide"
 )
 
+ui_kit.inject_theme()
+ui_kit.sidebar_status(
+    logo_path="data_cpbl/tennis-ball.svg",
+    brand="🌀 3D 共軌實驗室",
+    model_status={"3D 視覺化引擎": True},
+)
+
 # ==========================================
 # 2. 標題與引言區塊
 # ==========================================
-st.title("解密共軌效應")
-st.markdown("""
-#### 為什麼預測模型會把直球誤判成變化球？
-在這個互動式 3D 空間中，您可以親自體驗打者站在打擊區的視角。請注意在「打者決策點 (紅色平面)」之前，
-直球（藍線）與滑球（橘線）的軌跡是完全重疊的。這種視覺欺騙，正是我們的 AI 模型在數據中所捕捉到的真實賽局博弈。
-""")
-st.info("💡 **互動提示**：請使用滑鼠拖曳圖表以旋轉視角，並利用滾輪放大縮小。")
+ui_kit.hero_banner(
+    "解密共軌效應",
+    "為什麼預測模型會把直球誤判成變化球？",
+    icon="🌀",
+)
 
 # ==========================================
 # 3. 生成 3D 軌跡數據
 # ==========================================
-y_distance = np.linspace(60.5, 0, 100) 
-commit_point_y = 25.0 
+y_distance = np.linspace(60.5, 0, 100)
+commit_point_y = 25.0
 
 x_fb = np.zeros_like(y_distance)
-z_fb = np.linspace(6.0, 2.5, 100) 
+z_fb = np.linspace(6.0, 2.5, 100)
 
 x_sl = np.zeros_like(y_distance)
 z_sl = np.linspace(6.0, 2.5, 100)
@@ -37,27 +43,53 @@ z_sl = np.linspace(6.0, 2.5, 100)
 for i, y in enumerate(y_distance):
     if y < commit_point_y:
         break_factor = (commit_point_y - y) / commit_point_y
-        x_sl[i] = x_fb[i] + 1.5 * (break_factor ** 2)  
-        z_sl[i] = z_fb[i] - 1.0 * (break_factor ** 2)  
+        x_sl[i] = x_fb[i] + 1.5 * (break_factor ** 2)
+        z_sl[i] = z_fb[i] - 1.0 * (break_factor ** 2)
+
+horizontal_break = float(x_sl[-1] - x_fb[-1])
+vertical_break = float(z_fb[-1] - z_sl[-1])
 
 # ==========================================
-# 4. 繪製 Plotly 3D 圖表
+# 4. 說明文字 + 關鍵數據卡
+# ==========================================
+col_text, col_stats = st.columns([2, 1])
+
+with col_text:
+    st.markdown("""
+    在這個互動式 3D 空間中，您可以親自體驗打者站在打擊區的視角。請注意在「打者決策點 (紅色平面)」之前，
+    直球（藍線）與滑球（橘線）的軌跡是完全重疊的。這種視覺欺騙，正是我們的 AI 模型在數據中所捕捉到的真實賽局博弈。
+    """)
+    st.info("💡 **互動提示**：請使用滑鼠拖曳圖表以旋轉視角，並利用滾輪放大縮小。")
+
+with col_stats:
+    ui_kit.stat_card_row([
+        {"icon": "⏱️", "label": "打者決策點 (離本壘板)", "value": f"{commit_point_y:.1f} 呎",
+         "delta": "決策前軌跡完全重疊", "delta_color": ui_kit.ACCENT_BLUE},
+    ])
+    st.markdown("<br>", unsafe_allow_html=True)
+    ui_kit.stat_card_row([
+        {"icon": "📐", "label": "本壘板終端偏移", "value": f"↔{horizontal_break:.1f} / ↕{vertical_break:.1f} 呎",
+         "delta": "決策後急遽分歧", "delta_color": ui_kit.ACCENT_AMBER},
+    ])
+
+# ==========================================
+# 5. 繪製 Plotly 3D 圖表
 # ==========================================
 fig = go.Figure()
 
 fig.add_trace(go.Scatter3d(
     x=x_fb, y=y_distance, z=z_fb,
     mode='lines+markers',
-    marker=dict(size=3, color='#42a5f5'),
-    line=dict(width=5, color='#42a5f5'),
+    marker=dict(size=3, color=ui_kit.ACCENT_BLUE),
+    line=dict(width=5, color=ui_kit.ACCENT_BLUE),
     name='Fastball (直球)'
 ))
 
 fig.add_trace(go.Scatter3d(
     x=x_sl, y=y_distance, z=z_sl,
     mode='lines+markers',
-    marker=dict(size=3, color='#e65100'),
-    line=dict(width=5, color='#e65100'),
+    marker=dict(size=3, color=ui_kit.ACCENT_AMBER),
+    line=dict(width=5, color=ui_kit.ACCENT_AMBER),
     name='Slider (滑球)'
 ))
 
@@ -67,7 +99,7 @@ z_plane = np.array([[0, 0], [7, 7]])
 
 fig.add_trace(go.Surface(
     x=x_plane, y=y_plane, z=z_plane,
-    opacity=0.3, colorscale=[[0, 'red'], [1, 'red']],
+    opacity=0.3, colorscale=[[0, ui_kit.ACCENT_RED], [1, ui_kit.ACCENT_RED]],
     showscale=False, name='Commit Point'
 ))
 
@@ -80,17 +112,18 @@ fig.update_layout(
         yaxis=dict(range=[0, 65]),
         zaxis=dict(range=[0, 7]),
         camera=dict(
-            eye=dict(x=0.0, y=-0.5, z=0.2), # 預設打者視角
+            eye=dict(x=0.0, y=-0.5, z=0.2),  # 預設打者視角
             center=dict(x=0, y=0, z=0)
         )
     ),
     margin=dict(l=0, r=0, b=0, t=20),
     legend=dict(x=0.8, y=0.9),
-    height=600 
+    paper_bgcolor="rgba(0,0,0,0)",
+    height=600
 )
 
 # 渲染圖表
 st.plotly_chart(fig, use_container_width=True)
 
 st.divider()
-st.caption("本模擬器用於解釋模型特徵重要性中，空間座標特徵為何具有決定性影響。")
+st.caption("🔬 本模擬器用於解釋模型特徵重要性中，空間座標特徵為何具有決定性影響。")
