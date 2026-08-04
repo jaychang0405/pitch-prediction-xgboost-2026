@@ -10,18 +10,21 @@ HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/120.0 Safari/537.36"
-    )
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "zh-TW,zh;q=0.9,en;q=0.8",
+    "Referer": "https://www.cpbl.com.tw/",
 }
-REQUEST_TIMEOUT = 12
+REQUEST_TIMEOUT = 15
 
 # 單項排行榜前 5 個 item 是投手數據，後 5 個是打者數據
 TOPLIST_PITCHING_COUNT = 5
 
 
 def fetch_toplist():
-    """回傳 (pitching_categories, batting_categories)，每個 category 為
+    """回傳 (pitching_categories, batting_categories, error)。每個 category 為
     {"title_zh", "title_en", "leaders": [{"rank","name","team","value"}], "photo_url"}
-    失敗時回傳 (None, None)。
+    失敗時回傳 (None, None, error_message)，成功時 error 為 None。
     """
     try:
         resp = requests.get(f"{BASE_URL}/stats/toplist", headers=HEADERS, timeout=REQUEST_TIMEOUT)
@@ -65,15 +68,16 @@ def fetch_toplist():
                 })
 
         if not categories:
-            return None, None
-        return categories[:TOPLIST_PITCHING_COUNT], categories[TOPLIST_PITCHING_COUNT:]
-    except Exception:
-        return None, None
+            return None, None, "頁面結構解析失敗：找不到任何排行榜項目"
+        return categories[:TOPLIST_PITCHING_COUNT], categories[TOPLIST_PITCHING_COUNT:], None
+    except Exception as e:
+        return None, None, f"{type(e).__name__}: {e}"
 
 
 def fetch_standings():
-    """回傳球隊戰績清單，每隊為 {rank, team, logo_url, games, record, win_pct,
-    games_behind, home_record, away_record, streak, last10}。失敗時回傳 None。
+    """回傳 (teams, error)。teams 每隊為 {rank, team, logo_url, games, record,
+    win_pct, games_behind, home_record, away_record, streak, last10}。
+    失敗時回傳 (None, error_message)，成功時 error 為 None。
     """
     try:
         resp = requests.get(f"{BASE_URL}/standings/season", headers=HEADERS, timeout=REQUEST_TIMEOUT)
@@ -90,7 +94,7 @@ def fetch_standings():
 
         first_table = soup.find("table")
         if first_table is None:
-            return None
+            return None, "頁面結構解析失敗：找不到戰績表格"
 
         teams = []
         for tr in first_table.find_all("tr"):
@@ -116,6 +120,8 @@ def fetch_standings():
                 "last10": tds[15],
             })
 
-        return teams or None
-    except Exception:
-        return None
+        if not teams:
+            return None, "頁面結構解析失敗：找不到任何球隊列"
+        return teams, None
+    except Exception as e:
+        return None, f"{type(e).__name__}: {e}"

@@ -324,9 +324,11 @@ def render_live_section(t):
     st.markdown(f"### {t('live_header')}")
     st.caption(t("live_subtitle"))
 
-    standings = cached_standings()
+    standings, standings_err = cached_standings()
     if standings is None:
         st.warning(t("live_unavailable"))
+        if standings_err:
+            st.caption(f"debug: {standings_err}")
     else:
         df = pd.DataFrame(standings)
         df = df.rename(columns={
@@ -348,9 +350,11 @@ def render_live_section(t):
         )
 
     st.markdown("<br>", unsafe_allow_html=True)
-    pitching, batting = cached_toplist()
+    pitching, batting, toplist_err = cached_toplist()
     if pitching is None or batting is None:
         st.warning(t("live_unavailable"))
+        if toplist_err:
+            st.caption(f"debug: {toplist_err}")
     else:
         st.markdown(f"#### {t('toplist_pitching_header')}")
         cols = st.columns(len(pitching))
