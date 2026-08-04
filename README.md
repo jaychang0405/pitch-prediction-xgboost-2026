@@ -1,33 +1,50 @@
-# pitch-prediction-xgboost-2026
-A bi-level ML system predicting MLB &amp; CPBL pitch types using XGBoost. Features pitch tunneling metrics, class-weight balancing, and Brier Score calibration for reliable in-game decision support.
+# pitch-obp-prediction-xgboost-2026
+> A bi-level ML system predicting MLB & CPBL pitch types & obp using XGBoost. Features pitch tunneling metrics, class-weight balancing, and Brier Score calibration for reliable in-game decision support.
 
-📋 專案名稱：CPBL 動態決策支援系統 - 本地端執行指南
-哈囉！這份指南會帶你把我們開發的「中職動態預測網頁」在你的電腦上跑起來。請按照以下步驟操作：
+本專案結合**機器學習**與**棒球物理學**，針對美國大聯盟 (MLB) 與中華職棒 (CPBL) 開發的雙層決策支援系統。系統透過分析巨量逐球數據 (Pitch-by-Pitch Dynamics)，破解投手在賽局中的心理博弈，並即時提供球種預測與上壘率 (OBP) 風險評估。
 
-⚙️ 事前準備
-請確保你的電腦已經安裝了 Python（建議版本 3.8 以上）。
+## 核心技術與亮點 (Core Features)
 
-如果你還沒安裝過，可以到 Python 官網 下載安裝。
+* **雙聯盟跨域驗證 (Cross-League Validation)**
+  統一特徵工程 pipeline，同時針對 MLB (Statcast) 與 CPBL 數據進行建模，驗證「上一球軌跡」與「好壞球數」在不同層級賽事中的戰術一致性。
+* **自訂懲罰矩陣 (Custom Class Weighting)**
+  針對直球佔比過高的資料不平衡問題，捨棄傳統自動平衡，設計專屬權重比例 (Fastball: 1.0, Slider/Changeup: 2.5, Curveball: 4.0)，成功將 Macro F1-Score 最大化，並維持超過 73% 的實戰 Top-2 準確率。
+* **嚴謹的機率校準 (Brier Score Calibration)**
+  在上壘率預測模組中，不只追求分類正確率，更利用 Brier Score 進行嚴格的機率校準，確保預測機率高度貼合真實賽局發生率。
+* **零資料洩漏 (Zero Data Leakage)**
+  採用嚴格的時序排序 (Temporal Sequencing)，確保特徵工程完全基於賽局當下的歷史狀態，避免未來數據污染。
+* **3D 共軌效應實驗室 (The Tunneling Illusion)**
+  內建互動式 3D 視覺化模組。精準還原直球與滑球在「打者決策點 (Commit Point)」前的重疊軌跡，解釋模型為何會產生與真實打者相同的視覺誤判。
+  
+## 技術 (Tech Stack)
 
-(Windows 用戶安裝時，請務必勾選「Add Python to PATH」)
+* **Machine Learning:** XGBoost, Scikit-learn, Pandas, NumPy
+* **Data Visualization:** Plotly (3D Interactive), Matplotlib, Seaborn
+* **Frontend / App Framework:** Streamlit
 
-🚀 步驟 1：取得程式碼
-請打開你的終端機（Terminal 或命令提示字元 CMD），將專案從 GitHub 複製下來，並進入該資料夾：
+## 模型表現與評估 (Model Performance)
 
-📦 步驟 2：安裝必備套件
-我們的專案有使用到機器學習與網頁框架，請在終端機輸入以下指令，一次安裝所有需要的套件：
+本系統不僅在單一聯盟取得成效，更在跨聯盟（CPBL & MLB）的驗證中展現了高度的泛化能力。以下為模型在測試集上的核心指標表現：
 
-pip install streamlit pandas numpy xgboost matplotlib
+### 1. 球種預測模組 (Pitch Type Classification)
+面對棒球賽事中「直球佔比高達 60%」的極度不平衡資料，我們的模型透過自訂類別權重（Class Weighting），成功在「精準度」與「實戰防備圈」中取得最佳平衡，大幅超越僅預測直球的盲猜基準線（Baseline）。
 
-⚾ 步驟 3：啟動系統
-套件安裝完成後，確認你仍在專案資料夾內，輸入以下指令啟動網頁：
+| 評估指標 (Metrics) | 基準線 (Baseline / Fastball Only) | 本系統模型 (Our XGBoost Model) | 成長幅度 (Improvement) |
+| :--- | :---: | :---: | :---: |
+| **Top-2 準確率 (Top-2 Accuracy)** | 57.30% | **73.05%** | **+ 15.75%** |
+| **Macro F1-Score** | 0.1800 | **0.3828** | **+ 112.6%** |
 
-streamlit run cpbl_app.py 
-(註：如果主程式檔名不同，請把 cpbl_app.py 換成正確的檔名)
+> **洞察 (Insight)：** 模型在 Macro F1-Score 上的翻倍成長，證明了 AI 成功學會了辨識罕見但致命的變化球。即使發生誤判，大量直球被預測為滑球的現象也完美還原了實戰中的「共軌效應 (Pitch Tunneling)」，展現了與人類打者一致的決策困境。
 
-🔓 步驟 4：解鎖與使用
-啟動成功後，你的瀏覽器會自動彈出網頁（網址通常是 http://localhost:8501）。
+### 2. 動態上壘率預測 (Dynamic OBP Calibration)
+在預測打席結果時，我們專注於「機率校準 (Probability Calibration)」，使用 Brier Score（分數越低代表預測機率越貼近現實發生率）作為核心評估標準。
 
-因為系統有做保護，畫面上會出現密碼鎖。請輸入存取密碼：20050405。
+| 比較維度 (Dimension) | 本系統模型 (My XGBoost Model) | 企業級基準 (e.g., Apple TV+ MLB) |
+| :--- | :--- | :--- |
+| **Brier Score (越低越好)** | **0.2217** | ~ 0.2000 |
+| **數據來源 (Data Source)** | 公開軌跡數據 (Open-Source Statcast) | 企業級私有數據 (Hawk-Eye Biomechanics) |
+| **運算資源 (Computing Power)** | 基礎雲端運算 (Basic Cloud Instance) | 企業雲端叢集 (Enterprise Cloud Cluster) |
 
-解鎖後，你就可以自由測試各項情境與九宮格預測了！
+> **結論 (Conclusion)：** 在受限的開源數據與運算資源下，本系統的 Brier Score (0.2217) 依然展現了逼近企業級商用模型的精準度，證明了我們的高效特徵工程（如防漏時序排序、情境特徵萃取）能極大化數據的決策價值。
+
+**[點此進入 Prediction System 網頁版 (Streamlit Cloud)](https://pitch-obp-prediction.streamlit.app/)**
