@@ -4,6 +4,8 @@ import plotly.graph_objects as go
 import numpy as np
 import ui_kit
 
+ui_kit.require_login()
+
 # ==========================================
 # 1. 標題與引言區塊
 # ==========================================

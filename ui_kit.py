@@ -19,6 +19,7 @@ CARD_BORDER = "rgba(255, 255, 255, 0.09)"
 
 LANGUAGES = {"繁體中文": "zh", "English": "en", "日本語": "ja"}
 LANG_SWITCH_KEY = "lang_switch"
+USER_BADGE_KEY = "user_badge"
 
 
 def inject_theme():
@@ -167,6 +168,26 @@ def inject_theme():
         div.st-key-{LANG_SWITCH_KEY} svg {{
             fill: #ffffff !important;
         }}
+
+        /* ---- 使用者徽章 (登入後顯示於語言切換器左側) ---- */
+        div.st-key-{USER_BADGE_KEY} {{
+            position: fixed;
+            top: 10px;
+            right: 13rem;
+            z-index: 999999;
+        }}
+        div.st-key-{USER_BADGE_KEY} button {{
+            background: rgba(255,255,255,0.08) !important;
+            border: 1px solid rgba(255,255,255,0.25) !important;
+            color: #ffffff !important;
+            border-radius: 999px !important;
+            white-space: nowrap !important;
+            font-weight: 600 !important;
+        }}
+        div.st-key-{USER_BADGE_KEY} button:hover {{
+            border-color: {ACCENT_RED} !important;
+            color: {ACCENT_RED} !important;
+        }}
         </style>
         """,
         unsafe_allow_html=True,
@@ -184,6 +205,23 @@ def language_switcher(default="繁體中文"):
             label_visibility="collapsed",
         )
     return LANGUAGES[choice]
+
+
+def user_badge(username, logout_label="登出"):
+    """登入後顯示於導覽列的使用者徽章，點擊即登出。"""
+    with st.container(key=USER_BADGE_KEY):
+        if st.button(f"👤 {username} · {logout_label}", key="uikit_logout_btn"):
+            st.session_state.pop("user", None)
+            st.rerun()
+
+
+def require_login(login_page="views/auth_view.py"):
+    """防禦性守門：即使繞過導覽選單直連網址，未登入也無法看到頁面內容。"""
+    if st.session_state.get("user"):
+        return
+    st.warning("🔒 請先登入才能使用此功能 / Please log in first / ログインしてください")
+    st.page_link(login_page, label="前往登入 / Login →", icon="🔐")
+    st.stop()
 
 
 def hero_banner(title, subtitle, icon="⚾"):
@@ -218,7 +256,8 @@ def stat_card_row(items):
             )
 
 
-def module_link_card(title, desc, bullets, page_path, icon="⚾", accent=ACCENT_BLUE, link_label="進入模組 →"):
+def module_link_card(title, desc, bullets, page_path, icon="⚾", accent=ACCENT_BLUE, link_label="進入模組 →",
+                      locked=False, locked_label="🔒 請先登入", login_page="views/auth_view.py"):
     bullets_html = "".join(f"<li>{b}</li>" for b in bullets)
     st.markdown(
         f"""
@@ -231,7 +270,10 @@ def module_link_card(title, desc, bullets, page_path, icon="⚾", accent=ACCENT_
         """,
         unsafe_allow_html=True,
     )
-    st.page_link(page_path, label=link_label, icon="➡️")
+    if locked:
+        st.page_link(login_page, label=locked_label, icon="🔒")
+    else:
+        st.page_link(page_path, label=link_label, icon="➡️")
 
 
 STRIKE_ZONE_LABELS = {
