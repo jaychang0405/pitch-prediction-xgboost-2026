@@ -2,8 +2,6 @@
 import streamlit as st
 import ui_kit
 
-logged_in = bool(st.session_state.get("user"))
-
 # ==========================================
 # 1. Hero 區塊 (大標題與歡迎詞)
 # ==========================================
@@ -12,11 +10,6 @@ ui_kit.hero_banner(
     "即時球種與上壘風險預測系統 (Powered by XGBoost) — 歡迎來到資料科學與棒球賽事的交會點。本系統結合歷史投打對決數據，為您提供即時的情境預測。",
     icon="⚾",
 )
-
-if not logged_in:
-    st.info("🔒 CPBL / MLB / 3D 預測模組需要登入才能使用，請先登入或註冊帳號。")
-    st.page_link("views/auth_view.py", label="前往登入 / 註冊 →", icon="🔐")
-    st.markdown("<br>", unsafe_allow_html=True)
 
 # ==========================================
 # 2. 數據概覽面板 (Metrics)
@@ -48,7 +41,6 @@ with col1:
         page_path="views/cpbl_app.py",
         icon="🇹🇼",
         accent=ui_kit.ACCENT_BLUE,
-        locked=not logged_in,
     )
 
 with col2:
@@ -62,7 +54,6 @@ with col2:
         page_path="views/mlb_app.py",
         icon="🇺🇸",
         accent=ui_kit.ACCENT_PURPLE,
-        locked=not logged_in,
     )
 
 with col3:
@@ -76,7 +67,6 @@ with col3:
         page_path="views/tunneling_lab.py",
         icon="🌀",
         accent=ui_kit.ACCENT_AMBER,
-        locked=not logged_in,
     )
 
 st.divider()

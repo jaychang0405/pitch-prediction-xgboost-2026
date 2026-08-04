@@ -18,7 +18,6 @@ except ImportError:
 DATA_PATH = "data_mlb"
 
 st.logo(os.path.join(DATA_PATH, "mlb_logo.png"), size="large")
-ui_kit.require_login()
 
 # ==========================================
 # 1. 三語字典設定

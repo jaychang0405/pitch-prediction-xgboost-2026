@@ -15,7 +15,6 @@ except ImportError:
 DATA_PATH = "data_cpbl"  # 設定為獨立資料夾
 
 st.logo(os.path.join(DATA_PATH, "cpbl_icon.png"), size="large")
-ui_kit.require_login()
 
 # ==========================================
 # 0. 密碼鎖與路徑設定
