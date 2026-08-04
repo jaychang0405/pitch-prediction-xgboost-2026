@@ -282,12 +282,17 @@ pitch_model, obp_model = load_models()
 # ==========================================
 # 2b. CPBL 官網即時戰績與排行榜
 # ==========================================
+# cache_data 是依「這個 wrapper 函式自己的原始碼」算 hash key，不會追蹤它呼叫的
+# cpbl_live.py 內容有沒有變。只改 cpbl_live.py 的話 wrapper 原始碼沒變，重新部署
+# 後可能還是吃到舊格式的快取，所以用一個會手動遞增的版本號當參數，強制換新 key。
+CPBL_LIVE_CACHE_VERSION = 2
+
 @st.cache_data(ttl=1800, show_spinner=False)
-def cached_toplist():
+def cached_toplist(version=CPBL_LIVE_CACHE_VERSION):
     return cpbl_live.fetch_toplist()
 
 @st.cache_data(ttl=1800, show_spinner=False)
-def cached_standings():
+def cached_standings(version=CPBL_LIVE_CACHE_VERSION):
     return cpbl_live.fetch_standings()
 
 def render_leader_card(category, t):
