@@ -87,6 +87,27 @@ def inject_theme():
         .uikit-stat-label {{ font-size: 0.82rem; color: rgba(255,255,255,0.6); }}
         .uikit-stat-delta {{ font-size: 0.78rem; font-weight: 600; }}
 
+        /* ---- 球員卡：圓形大頭照 ---- */
+        .uikit-player-card {{
+            text-align: center;
+            padding: 0.6rem 0.3rem 0.2rem;
+        }}
+        .uikit-player-avatar {{
+            width: 84px;
+            height: 84px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(66,165,245,0.45);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+        }}
+        .uikit-player-name {{
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            line-height: 1.25;
+            min-height: 2.3em;
+        }}
+
         /* ---- 機率長條 ---- */
         .uikit-bar-row {{ margin-bottom: 0.65rem; }}
         .uikit-bar-label {{

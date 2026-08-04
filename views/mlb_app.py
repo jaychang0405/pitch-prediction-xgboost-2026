@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import os
 import json
+import requests
 import ui_kit
 
 try:
@@ -64,6 +65,21 @@ LANG = {
         "obp_high_risk": "🚨 高上壘風險！",
         "obp_low_risk": "🟢 投手佔優勢。",
         "obp_infer_fail": "⚠️ OBP 模型推論失敗。錯誤訊息: {e}",
+        "stars_header": "⭐ 明星球員近況",
+        "stars_subtitle": "點擊「查看數據」看該球員本季最新表現",
+        "stat_view_btn": "📊 查看數據",
+        "stat_season": "{season} 賽季",
+        "stat_avg": "打擊率 AVG",
+        "stat_hr": "全壘打 HR",
+        "stat_rbi": "打點 RBI",
+        "stat_ops": "OPS",
+        "stat_games": "出賽場次",
+        "stat_era": "防禦率 ERA",
+        "stat_wl": "勝-敗",
+        "stat_so": "三振數 SO",
+        "stat_whip": "WHIP",
+        "stat_gs": "先發場次",
+        "stat_unavailable": "⚠️ 目前無法取得最新數據，請稍後再試。",
     },
     "en": {
         "title": "MLB Dynamic Decision Support",
@@ -106,6 +122,21 @@ LANG = {
         "obp_high_risk": "🚨 High OBP risk!",
         "obp_low_risk": "🟢 Pitcher has the advantage.",
         "obp_infer_fail": "⚠️ OBP inference failed. Error: {e}",
+        "stars_header": "⭐ Star Player Watch",
+        "stars_subtitle": "Click \"View Stats\" to see this season's latest numbers",
+        "stat_view_btn": "📊 View Stats",
+        "stat_season": "{season} Season",
+        "stat_avg": "AVG",
+        "stat_hr": "HR",
+        "stat_rbi": "RBI",
+        "stat_ops": "OPS",
+        "stat_games": "Games Played",
+        "stat_era": "ERA",
+        "stat_wl": "W-L",
+        "stat_so": "Strikeouts",
+        "stat_whip": "WHIP",
+        "stat_gs": "Games Started",
+        "stat_unavailable": "⚠️ Latest stats unavailable right now, please try again later.",
     },
     "ja": {
         "title": "MLB動的意思決定支援システム",
@@ -148,6 +179,21 @@ LANG = {
         "obp_high_risk": "🚨 出塁リスク高！",
         "obp_low_risk": "🟢 投手有利。",
         "obp_infer_fail": "⚠️ OBPモデルの推論に失敗しました。エラー: {e}",
+        "stars_header": "⭐ スター選手の近況",
+        "stars_subtitle": "「データを見る」をクリックすると今季の最新成績を確認できます",
+        "stat_view_btn": "📊 データを見る",
+        "stat_season": "{season} シーズン",
+        "stat_avg": "打率 AVG",
+        "stat_hr": "本塁打 HR",
+        "stat_rbi": "打点 RBI",
+        "stat_ops": "OPS",
+        "stat_games": "出場試合数",
+        "stat_era": "防御率 ERA",
+        "stat_wl": "勝敗",
+        "stat_so": "奪三振 SO",
+        "stat_whip": "WHIP",
+        "stat_gs": "先発試合数",
+        "stat_unavailable": "⚠️ 現在最新データを取得できません。後でもう一度お試しください。",
     },
 }
 
@@ -241,12 +287,87 @@ def get_headshot_url(player_id):
     return f"https://midfield.mlbstatic.com/v1/people/{player_id}/spots/120"
 
 # ==========================================
+# 2b. 明星球員近況 (MLB Stats API 即時數據)
+# ==========================================
+STAR_ROSTER = [
+    {"id": 660271, "name": "Shohei Ohtani", "group": "hitting"},
+    {"id": 592450, "name": "Aaron Judge", "group": "hitting"},
+    {"id": 669373, "name": "Tarik Skubal", "group": "pitching"},
+    {"id": 694973, "name": "Paul Skenes", "group": "pitching"},
+    {"id": 663728, "name": "Cal Raleigh", "group": "hitting"},
+    {"id": 665489, "name": "Vladimir Guerrero Jr.", "group": "hitting"},
+    {"id": 608070, "name": "José Ramírez", "group": "hitting"},
+    {"id": 665742, "name": "Juan Soto", "group": "hitting"},
+    {"id": 677951, "name": "Bobby Witt Jr.", "group": "hitting"},
+]
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def fetch_player_stats(player_id, group):
+    """向 MLB Stats API 取得該球員本季數據，失敗時回傳 None。"""
+    try:
+        resp = requests.get(
+            f"https://statsapi.mlb.com/api/v1/people/{player_id}/stats",
+            params={"stats": "season", "group": group},
+            timeout=6,
+        )
+        resp.raise_for_status()
+        splits = resp.json().get("stats", [{}])[0].get("splits", [])
+        if not splits:
+            return None
+        split = splits[0]
+        return {
+            "season": split.get("season", "-"),
+            "team": split.get("team", {}).get("name", ""),
+            "stat": split.get("stat", {}),
+        }
+    except Exception:
+        return None
+
+def render_star_players(t):
+    st.markdown(f"### {t('stars_header')}")
+    st.caption(t("stars_subtitle"))
+    cols = st.columns(len(STAR_ROSTER))
+    for col, player in zip(cols, STAR_ROSTER):
+        with col:
+            st.markdown(
+                f"""
+                <div class="uikit-player-card">
+                    <img class="uikit-player-avatar" src="{get_headshot_url(player['id'])}" />
+                    <div class="uikit-player-name">{player['name']}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            with st.popover(t("stat_view_btn"), use_container_width=True):
+                info = fetch_player_stats(player["id"], player["group"])
+                if info is None:
+                    st.caption(t("stat_unavailable"))
+                else:
+                    s = info["stat"]
+                    st.caption(f"{t('stat_season').format(season=info['season'])} · {info['team']}")
+                    if player["group"] == "hitting":
+                        st.metric(t("stat_avg"), s.get("avg", "-"))
+                        st.metric(t("stat_hr"), s.get("homeRuns", "-"))
+                        st.metric(t("stat_rbi"), s.get("rbi", "-"))
+                        st.metric(t("stat_ops"), s.get("ops", "-"))
+                        st.metric(t("stat_games"), s.get("gamesPlayed", "-"))
+                    else:
+                        st.metric(t("stat_era"), s.get("era", "-"))
+                        st.metric(t("stat_wl"), f"{s.get('wins', '-')}-{s.get('losses', '-')}")
+                        st.metric(t("stat_so"), s.get("strikeOuts", "-"))
+                        st.metric(t("stat_whip"), s.get("whip", "-"))
+                        st.metric(t("stat_gs"), s.get("gamesStarted", "-"))
+    st.markdown("<br>", unsafe_allow_html=True)
+
+# ==========================================
 # 3. 頁面標題列 (含右上角語言切換)
 # ==========================================
 l = ui_kit.language_switcher()
 def t(key): return LANG[l].get(key, key)
 
 ui_kit.hero_banner(t("title"), t("subtitle"), icon="🇺🇸")
+
+render_star_players(t)
 
 # ==========================================
 # 4. 模式切換
