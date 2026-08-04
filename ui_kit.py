@@ -17,6 +17,9 @@ ACCENT_RED = "#ff5c5c"
 CARD_BG = "rgba(255, 255, 255, 0.035)"
 CARD_BORDER = "rgba(255, 255, 255, 0.09)"
 
+LANGUAGES = {"繁體中文": "zh", "English": "en", "日本語": "ja"}
+LANG_SWITCH_KEY = "lang_switch"
+
 
 def inject_theme():
     """注入全站共用 CSS：字體、卡片、按鈕、標題漸層等。"""
@@ -143,10 +146,44 @@ def inject_theme():
             background: linear-gradient(90deg, {ACCENT_BLUE}, {ACCENT_PURPLE}) !important;
             box-shadow: 0 2px 10px rgba(66,165,245,0.45);
         }}
+
+        /* ---- 語言切換器：以 fixed 定位疊到頂部導覽列右側 ---- */
+        [data-testid="stAppDeployButton"] {{
+            display: none !important;
+        }}
+        div.st-key-{LANG_SWITCH_KEY} {{
+            position: fixed;
+            top: 10px;
+            right: 3.2rem;
+            width: 148px;
+            z-index: 999999;
+        }}
+        div.st-key-{LANG_SWITCH_KEY} div[data-baseweb="select"] > div {{
+            background: rgba(255,255,255,0.08) !important;
+            border-color: rgba(255,255,255,0.25) !important;
+            color: #ffffff !important;
+            min-height: 40px !important;
+        }}
+        div.st-key-{LANG_SWITCH_KEY} svg {{
+            fill: #ffffff !important;
+        }}
         </style>
         """,
         unsafe_allow_html=True,
     )
+
+
+def language_switcher(default="繁體中文"):
+    """右上角固定定位的語言下拉選單，疊在頂部導覽列上。回傳語言代碼 (zh/en/ja)。"""
+    options = list(LANGUAGES.keys())
+    with st.container(key=LANG_SWITCH_KEY):
+        choice = st.selectbox(
+            "Language",
+            options,
+            index=options.index(default),
+            label_visibility="collapsed",
+        )
+    return LANGUAGES[choice]
 
 
 def hero_banner(title, subtitle, icon="⚾"):
@@ -197,8 +234,16 @@ def module_link_card(title, desc, bullets, page_path, icon="⚾", accent=ACCENT_
     st.page_link(page_path, label=link_label, icon="➡️")
 
 
-def draw_strike_zone_plotly(predicted_pitch_en, prob):
+STRIKE_ZONE_LABELS = {
+    "zh": {"title": "AI 預測落點 (Strike Zone)", "area": "區域", "predicted": "預測落點", "non_primary": "非主要落點"},
+    "en": {"title": "AI Predicted Location (Strike Zone)", "area": "Zone", "predicted": "Predicted", "non_primary": "Not primary"},
+    "ja": {"title": "AI予測コース (Strike Zone)", "area": "ゾーン", "predicted": "予測コース", "non_primary": "非主要コース"},
+}
+
+
+def draw_strike_zone_plotly(predicted_pitch_en, prob, lang="zh"):
     """九宮格互動落點圖（CPBL / MLB 共用）。"""
+    labels = STRIKE_ZONE_LABELS.get(lang, STRIKE_ZONE_LABELS["zh"])
     if "Fastball" in predicted_pitch_en:
         target_id = random.choice([2, 5, 4, 6])
     elif "Changeup" in predicted_pitch_en or "Splitter" in predicted_pitch_en:
@@ -218,7 +263,7 @@ def draw_strike_zone_plotly(predicted_pitch_en, prob):
 
         if is_target:
             texts.append(f"<b>{predicted_pitch_en}</b><br>{prob:.1f}%")
-            hover_texts.append(f"區域: {i}<br>預測落點: {predicted_pitch_en}")
+            hover_texts.append(f"{labels['area']}: {i}<br>{labels['predicted']}: {predicted_pitch_en}")
             text_colors.append("#ffffff")
             fig.add_shape(
                 type="rect", x0=col, y0=row, x1=col + 1, y1=row + 1,
@@ -228,7 +273,7 @@ def draw_strike_zone_plotly(predicted_pitch_en, prob):
             )
         else:
             texts.append(str(i))
-            hover_texts.append(f"區域: {i}<br>非主要落點")
+            hover_texts.append(f"{labels['area']}: {i}<br>{labels['non_primary']}")
             text_colors.append("rgba(255, 255, 255, 0.3)")
             fig.add_shape(
                 type="rect", x0=col, y0=row, x1=col + 1, y1=row + 1,
@@ -252,7 +297,7 @@ def draw_strike_zone_plotly(predicted_pitch_en, prob):
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         hovermode="closest",
-        title=dict(text="AI 預測落點 (Strike Zone)", x=0.5, font=dict(size=16, color="#e0e0e0")),
+        title=dict(text=labels["title"], x=0.5, font=dict(size=16, color="#e0e0e0")),
     )
     return fig
 
