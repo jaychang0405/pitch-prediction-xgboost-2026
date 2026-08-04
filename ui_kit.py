@@ -105,12 +105,6 @@ def inject_theme():
             from {{ width: 0; }}
         }}
 
-        /* ---- 側邊欄狀態卡 ---- */
-        .uikit-status-row {{
-            display: flex; align-items: center; gap: 0.5rem;
-            font-size: 0.85rem; padding: 0.15rem 0;
-        }}
-
         /* ---- Streamlit 按鈕強化 ---- */
         div[data-testid="stButton"] > button {{
             border-radius: 12px;
@@ -121,6 +115,33 @@ def inject_theme():
         div[data-testid="stButton"] > button:hover {{
             border-color: {ACCENT_BLUE};
             box-shadow: 0 0 0 3px rgba(66,165,245,0.18);
+        }}
+
+        /* ---- 頂部導覽列 (st.navigation position="top") ---- */
+        [data-testid="stHeader"] {{
+            background: linear-gradient(90deg, #0a1a35 0%, #123467 100%) !important;
+            border-bottom: 1px solid rgba(66,165,245,0.32);
+            box-shadow: 0 4px 18px rgba(0,0,0,0.4);
+        }}
+        [data-testid="stHeaderLogo"] img {{
+            filter: drop-shadow(0 0 6px rgba(66,165,245,0.6));
+        }}
+        [data-testid="stTopNavLink"] {{
+            color: rgba(255,255,255,0.78) !important;
+            font-weight: 700 !important;
+            border-radius: 999px !important;
+            padding: 0.35rem 1.1rem !important;
+            margin: 0 0.15rem !important;
+            transition: all 0.15s ease;
+        }}
+        [data-testid="stTopNavLink"]:hover {{
+            color: #ffffff !important;
+            background: rgba(255,255,255,0.10) !important;
+        }}
+        [data-testid="stTopNavLink"][aria-current="page"] {{
+            color: #ffffff !important;
+            background: linear-gradient(90deg, {ACCENT_BLUE}, {ACCENT_PURPLE}) !important;
+            box-shadow: 0 2px 10px rgba(66,165,245,0.45);
         }}
         </style>
         """,
@@ -291,22 +312,3 @@ def risk_gauge(prob, title="上壘機率 (xOBP)", low_threshold=0.30, high_thres
         font=dict(color="#fafafa"),
     )
     return fig
-
-
-def sidebar_status(logo_path, brand, model_status: dict):
-    """側邊欄品牌 Logo + 模型載入狀態卡。"""
-    try:
-        st.logo(logo_path)
-    except Exception:
-        pass
-    st.sidebar.markdown(f"### {brand}")
-    st.sidebar.markdown('<div class="uikit-card">', unsafe_allow_html=True)
-    st.sidebar.markdown("**🔌 系統狀態**")
-    for label, ok in model_status.items():
-        dot = "🟢" if ok else "🔴"
-        st.sidebar.markdown(
-            f'<div class="uikit-status-row">{dot} {label}</div>',
-            unsafe_allow_html=True,
-        )
-    st.sidebar.markdown('</div>', unsafe_allow_html=True)
-    st.sidebar.markdown("---")

@@ -5,22 +5,7 @@ import numpy as np
 import ui_kit
 
 # ==========================================
-# 1. 頁面基本設定
-# ==========================================
-st.set_page_config(
-    page_title="解密共軌效應 | 棒球動態決策系統",
-    layout="wide"
-)
-
-ui_kit.inject_theme()
-ui_kit.sidebar_status(
-    logo_path="data_cpbl/tennis-ball.svg",
-    brand="🌀 3D 共軌實驗室",
-    model_status={"3D 視覺化引擎": True},
-)
-
-# ==========================================
-# 2. 標題與引言區塊
+# 1. 標題與引言區塊
 # ==========================================
 ui_kit.hero_banner(
     "解密共軌效應",

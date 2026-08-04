@@ -17,14 +17,6 @@ except ImportError:
 # ==========================================
 DATA_PATH = "data_mlb"
 
-st.set_page_config(
-    page_title="MLB Dynamic Prediction System",
-    page_icon=os.path.join(DATA_PATH, "tennis-ball.svg"),
-    layout="wide"
-)
-
-ui_kit.inject_theme()
-
 # ==========================================
 # 1. 雙語字典設定 (保持不變)
 # ==========================================
@@ -115,16 +107,6 @@ def load_mlb_models():
 
 pitchers_db, batters_db, mlb_features, mlb_classes, obp_db_dict = load_mlb_dicts()
 pitch_model, obp_model = load_mlb_models()
-
-ui_kit.sidebar_status(
-    logo_path=os.path.join(DATA_PATH, "mlb_logo.png"),
-    brand="🇺🇸 MLB 決策系統",
-    model_status={
-        "球種預測模型": HAS_XGB and pitch_model is not None,
-        "OBP 預測模型": HAS_XGB and obp_model is not None,
-        "球員資料庫": bool(pitchers_db) and bool(batters_db),
-    },
-)
 
 def get_headshot_url(player_id):
     return f"https://midfield.mlbstatic.com/v1/people/{player_id}/spots/120"

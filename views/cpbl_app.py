@@ -14,14 +14,6 @@ except ImportError:
 
 DATA_PATH = "data_cpbl"  # 設定為獨立資料夾
 
-st.set_page_config(
-    page_title="CPBL 動態決策支援系統",
-    page_icon=os.path.join(DATA_PATH, "tennis-ball.svg"),
-    layout="wide"
-)
-
-ui_kit.inject_theme()
-
 # ==========================================
 # 0. 密碼鎖與路徑設定
 # ==========================================
@@ -97,16 +89,6 @@ def load_models():
 
 data = load_cpbl_data()
 pitch_model, obp_model = load_models()
-
-ui_kit.sidebar_status(
-    logo_path=os.path.join(DATA_PATH, "cpbl_icon.png"),
-    brand="🇹🇼 CPBL 決策系統",
-    model_status={
-        "球種預測模型": HAS_XGB and pitch_model is not None,
-        "OBP 預測模型": HAS_XGB and obp_model is not None,
-        "球員資料庫": bool(data.get("features")),
-    },
-)
 
 # ==========================================
 # 3. 頁面標題列 (含右上角語言切換)
