@@ -1,7 +1,4 @@
-[theme]
-# 專業深色戰情室主題
-primaryColor = "#42a5f5"          # 亮藍色 (主要按鈕與強調色)
-backgroundColor = "#0e1117"       # 極深藍背景 (增加高級感)
-secondaryBackgroundColor = "#161b22" # 側邊欄與區塊背景
-textColor = "#fafafa"             # 近純白文字
-font = "sans serif"               # 現代感無襯線字體
+# 這裡刻意留空：只要 [theme] 區塊存在（就算只設 font），Streamlit 就會把
+# 「設定 > Choose app theme」鎖成唯一的 Custom Theme，使用者切不了 Light/Dark。
+# 改成完全不設定，讓 Streamlit 用內建的 Light/Dark（可切換），
+# 品牌強調色改在 ui_kit.py 用 CSS 疊上去。

@@ -46,13 +46,22 @@ def _team_color(team):
     return hex_color.split(";")[0] or DEFAULT_TEAM_COLOR
 
 
-def fetch_standings():
-    """回傳 (teams, error)。teams 每隊為 {rank, team, hex_color, games, record,
+# rebas.tw 用 section 這個參數同時表達「全年度/上半季/下半季」(team 類型) 和
+# 「基礎/進階數據」(player 類型)，兩者字面上剛好都叫 section 但意思不同。
+# 這裡只給 team 戰績用，"standard"=全年度、"top"=上半季、"bottom"=下半季。
+STANDINGS_RANGES = ("standard", "top", "bottom")
+
+
+def fetch_standings(season_range="standard"):
+    """回傳 (teams, error)。season_range 為 "standard"(全年度) / "top"(上半季) /
+    "bottom"(下半季)。teams 每隊為 {rank, team, hex_color, games, record,
     win_pct, games_behind, streak}。失敗時回傳 (None, error_message)。
     """
+    if season_range not in STANDINGS_RANGES:
+        season_range = "standard"
     try:
         season_id = _current_season_uniqid()
-        rows = _get_json(f"/api/seasons/{season_id}/leaders", params={"type": "team", "section": "standard"})
+        rows = _get_json(f"/api/seasons/{season_id}/leaders", params={"type": "team", "section": season_range})
 
         teams = []
         for row in rows:

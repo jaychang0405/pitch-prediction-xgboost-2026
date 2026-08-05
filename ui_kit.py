@@ -14,15 +14,68 @@ ACCENT_PURPLE = "#8e6bff"
 ACCENT_GREEN = "#3ddc97"
 ACCENT_AMBER = "#ffb347"
 ACCENT_RED = "#ff5c5c"
+
+# 舊常數保留給還沒 import palette() 的地方用，對應深色模式的預設值。
 CARD_BG = "rgba(255, 255, 255, 0.035)"
 CARD_BORDER = "rgba(255, 255, 255, 0.09)"
 
 LANGUAGES = {"繁體中文": "zh", "English": "en", "日本語": "ja"}
 LANG_SWITCH_KEY = "lang_switch"
 
+_DARK_PALETTE = {
+    "text": "#fafafa",
+    "text_soft": "rgba(255,255,255,0.75)",
+    "text_muted": "rgba(255,255,255,0.6)",
+    "card_bg": "rgba(255,255,255,0.035)",
+    "card_border": "rgba(255,255,255,0.09)",
+    "card_shadow": "rgba(0,0,0,0.35)",
+    "hero_bg": "linear-gradient(120deg, rgba(66,165,245,0.16) 0%, rgba(142,107,255,0.14) 100%)",
+    "hero_border": "rgba(66,165,245,0.25)",
+    "track_bg": "rgba(255,255,255,0.07)",
+    "bar_off": "rgba(255,255,255,0.25)",
+    "row_border": "rgba(255,255,255,0.08)",
+    "chart_text": "#e0e0e0",
+    "chart_strong": "#ffffff",
+    "chart_muted": "rgba(255,255,255,0.4)",
+    "chart_faint": "rgba(255,255,255,0.3)",
+}
+_LIGHT_PALETTE = {
+    "text": "#181c24",
+    "text_soft": "rgba(10,15,25,0.72)",
+    "text_muted": "rgba(10,15,25,0.55)",
+    "card_bg": "rgba(10,15,30,0.03)",
+    "card_border": "rgba(10,15,30,0.12)",
+    "card_shadow": "rgba(20,30,60,0.14)",
+    "hero_bg": "linear-gradient(120deg, rgba(66,165,245,0.10) 0%, rgba(142,107,255,0.09) 100%)",
+    "hero_border": "rgba(66,165,245,0.30)",
+    "track_bg": "rgba(10,15,30,0.08)",
+    "bar_off": "rgba(10,15,30,0.18)",
+    "row_border": "rgba(10,15,30,0.10)",
+    "chart_text": "#20242c",
+    "chart_strong": "#0d0f14",
+    "chart_muted": "rgba(20,24,32,0.5)",
+    "chart_faint": "rgba(20,24,32,0.35)",
+}
+
+
+def theme_type():
+    """回傳目前 Streamlit 使用者實際套用的主題："light" 或 "dark"。
+    讀取失敗（例如極舊版本沒有 st.context.theme）時預設 dark。"""
+    try:
+        return st.context.theme.type or "dark"
+    except Exception:
+        return "dark"
+
+
+def palette():
+    """回傳目前主題對應的色彩字典，供 ui_kit 內部與各頁面的自訂 HTML/Plotly 共用。"""
+    return _LIGHT_PALETTE if theme_type() == "light" else _DARK_PALETTE
+
 
 def inject_theme():
-    """注入全站共用 CSS：字體、卡片、按鈕、標題漸層等。"""
+    """注入全站共用 CSS：字體、卡片、按鈕、標題漸層等。會依 Streamlit 目前的
+    Light/Dark 主題（設定 > Choose app theme）自動套用對應色盤。"""
+    p = palette()
     st.markdown(
         f"""
         <style>
@@ -39,8 +92,8 @@ def inject_theme():
 
         /* ---- 通用卡片 ---- */
         .uikit-card {{
-            background: {CARD_BG};
-            border: 1px solid {CARD_BORDER};
+            background: {p['card_bg']};
+            border: 1px solid {p['card_border']};
             border-radius: 16px;
             padding: 1.3rem 1.5rem;
             transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
@@ -48,13 +101,13 @@ def inject_theme():
         .uikit-card:hover {{
             transform: translateY(-4px);
             border-color: rgba(66,165,245,0.55);
-            box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+            box-shadow: 0 10px 28px {p['card_shadow']};
         }}
 
         /* ---- Hero 區塊 ---- */
         .uikit-hero {{
-            background: linear-gradient(120deg, rgba(66,165,245,0.16) 0%, rgba(142,107,255,0.14) 100%);
-            border: 1px solid rgba(66,165,245,0.25);
+            background: {p['hero_bg']};
+            border: 1px solid {p['hero_border']};
             border-radius: 20px;
             padding: 1.8rem 2rem;
             margin-bottom: 1.4rem;
@@ -69,22 +122,22 @@ def inject_theme():
             background-clip: text;
         }}
         .uikit-hero-subtitle {{
-            color: rgba(255,255,255,0.75);
+            color: {p['text_soft']};
             font-size: 1.02rem;
             margin-top: 0.35rem;
         }}
 
         /* ---- 統計小卡 ---- */
         .uikit-stat {{
-            background: {CARD_BG};
-            border: 1px solid {CARD_BORDER};
+            background: {p['card_bg']};
+            border: 1px solid {p['card_border']};
             border-radius: 14px;
             padding: 1rem 1.1rem;
             text-align: left;
         }}
         .uikit-stat-icon {{ font-size: 1.4rem; }}
         .uikit-stat-value {{ font-size: 1.5rem; font-weight: 800; margin: 0.15rem 0; }}
-        .uikit-stat-label {{ font-size: 0.82rem; color: rgba(255,255,255,0.6); }}
+        .uikit-stat-label {{ font-size: 0.82rem; color: {p['text_muted']}; }}
         .uikit-stat-delta {{ font-size: 0.78rem; font-weight: 600; }}
 
         /* ---- 球員卡：圓形大頭照 ---- */
@@ -98,7 +151,7 @@ def inject_theme():
             border-radius: 50%;
             object-fit: cover;
             border: 3px solid rgba(66,165,245,0.45);
-            box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+            box-shadow: 0 4px 14px {p['card_shadow']};
         }}
         .uikit-player-name {{
             font-weight: 700;
@@ -112,10 +165,10 @@ def inject_theme():
         .uikit-bar-row {{ margin-bottom: 0.65rem; }}
         .uikit-bar-label {{
             display: flex; justify-content: space-between;
-            font-size: 0.9rem; margin-bottom: 0.25rem; color: rgba(255,255,255,0.85);
+            font-size: 0.9rem; margin-bottom: 0.25rem; color: {p['text_soft']};
         }}
         .uikit-bar-track {{
-            background: rgba(255,255,255,0.07);
+            background: {p['track_bg']};
             border-radius: 8px;
             height: 12px;
             overflow: hidden;
@@ -240,14 +293,15 @@ def stat_card_row(items):
 
 
 def module_link_card(title, desc, bullets, page_path, icon="⚾", accent=ACCENT_BLUE, link_label="進入模組 →"):
+    p = palette()
     bullets_html = "".join(f"<li>{b}</li>" for b in bullets)
     st.markdown(
         f"""
         <div class="uikit-card" style="border-top: 3px solid {accent};">
             <div style="font-size:1.6rem;">{icon}</div>
             <div style="font-size:1.25rem; font-weight:800; margin:0.3rem 0;">{title}</div>
-            <div style="color:rgba(255,255,255,0.72); font-size:0.92rem; margin-bottom:0.5rem;">{desc}</div>
-            <ul style="color:rgba(255,255,255,0.8); font-size:0.88rem; padding-left:1.1rem;">{bullets_html}</ul>
+            <div style="color:{p['text_soft']}; font-size:0.92rem; margin-bottom:0.5rem;">{desc}</div>
+            <ul style="color:{p['text_soft']}; font-size:0.88rem; padding-left:1.1rem;">{bullets_html}</ul>
         </div>
         """,
         unsafe_allow_html=True,
@@ -264,6 +318,7 @@ STRIKE_ZONE_LABELS = {
 
 def draw_strike_zone_plotly(predicted_pitch_en, prob, lang="zh"):
     """九宮格互動落點圖（CPBL / MLB 共用）。"""
+    p = palette()
     labels = STRIKE_ZONE_LABELS.get(lang, STRIKE_ZONE_LABELS["zh"])
     if "Fastball" in predicted_pitch_en:
         target_id = random.choice([2, 5, 4, 6])
@@ -285,7 +340,7 @@ def draw_strike_zone_plotly(predicted_pitch_en, prob, lang="zh"):
         if is_target:
             texts.append(f"<b>{predicted_pitch_en}</b><br>{prob:.1f}%")
             hover_texts.append(f"{labels['area']}: {i}<br>{labels['predicted']}: {predicted_pitch_en}")
-            text_colors.append("#ffffff")
+            text_colors.append(p["chart_strong"])
             fig.add_shape(
                 type="rect", x0=col, y0=row, x1=col + 1, y1=row + 1,
                 fillcolor="rgba(255, 92, 92, 0.45)",
@@ -295,7 +350,7 @@ def draw_strike_zone_plotly(predicted_pitch_en, prob, lang="zh"):
         else:
             texts.append(str(i))
             hover_texts.append(f"{labels['area']}: {i}<br>{labels['non_primary']}")
-            text_colors.append("rgba(255, 255, 255, 0.3)")
+            text_colors.append(p["chart_faint"])
             fig.add_shape(
                 type="rect", x0=col, y0=row, x1=col + 1, y1=row + 1,
                 fillcolor="rgba(66, 165, 245, 0.06)",
@@ -318,20 +373,21 @@ def draw_strike_zone_plotly(predicted_pitch_en, prob, lang="zh"):
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         hovermode="closest",
-        title=dict(text=labels["title"], x=0.5, font=dict(size=16, color="#e0e0e0")),
+        title=dict(text=labels["title"], x=0.5, font=dict(size=16, color=p["chart_text"])),
     )
     return fig
 
 
 def probability_bars(names, probs, highlight_idx=None):
     """自訂橫向漸層機率條，取代 st.bar_chart。"""
+    p = palette()
     if highlight_idx is None:
         highlight_idx = max(range(len(probs)), key=lambda i: probs[i])
 
     rows = []
     for i, (name, prob) in enumerate(zip(names, probs)):
         is_top = (i == highlight_idx)
-        gradient = f"linear-gradient(90deg, {ACCENT_BLUE}, {ACCENT_PURPLE})" if is_top else "rgba(255,255,255,0.25)"
+        gradient = f"linear-gradient(90deg, {ACCENT_BLUE}, {ACCENT_PURPLE})" if is_top else p["bar_off"]
         width = max(prob, 1.5)
         label = f"{'🎯 ' if is_top else ''}{name}"
         # Single-line HTML per row: Streamlit's markdown parser treats 4+ space
@@ -348,14 +404,15 @@ def probability_bars(names, probs, highlight_idx=None):
 
 def risk_gauge(prob, title="上壘機率 (xOBP)", low_threshold=0.30, high_threshold=0.38):
     """Plotly gauge：0~1 的機率風險儀表，三段色區。"""
+    p = palette()
     pct = prob * 100
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=pct,
-        number={"suffix": "%", "font": {"size": 34, "color": "#fafafa"}},
-        title={"text": title, "font": {"size": 15, "color": "rgba(255,255,255,0.75)"}},
+        number={"suffix": "%", "font": {"size": 34, "color": p["chart_strong"]}},
+        title={"text": title, "font": {"size": 15, "color": p["text_soft"]}},
         gauge={
-            "axis": {"range": [0, 100], "tickcolor": "rgba(255,255,255,0.4)"},
+            "axis": {"range": [0, 100], "tickcolor": p["chart_muted"]},
             "bar": {"color": ACCENT_BLUE, "thickness": 0.3},
             "bgcolor": "rgba(0,0,0,0)",
             "borderwidth": 0,
@@ -375,6 +432,6 @@ def risk_gauge(prob, title="上壘機率 (xOBP)", low_threshold=0.30, high_thres
         height=260,
         margin=dict(l=25, r=25, t=50, b=10),
         paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="#fafafa"),
+        font=dict(color=p["chart_strong"]),
     )
     return fig
