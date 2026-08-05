@@ -6,12 +6,11 @@ import os
 import json
 import ui_kit
 import cpbl_live
+import model_utils
+from model_utils import HAS_XGB
 
-try:
+if HAS_XGB:
     import xgboost as xgb
-    HAS_XGB = True
-except ImportError:
-    HAS_XGB = False
 
 DATA_PATH = "data_cpbl"  # 設定為獨立資料夾
 
@@ -272,14 +271,8 @@ def load_cpbl_data():
 
 @st.cache_resource
 def load_models():
-    pitch_model, obp_model = None, None
-    if HAS_XGB:
-        if os.path.exists(os.path.join(DATA_PATH, "cpbl_pitch_model.json")):
-            pitch_model = xgb.Booster()
-            pitch_model.load_model(os.path.join(DATA_PATH, "cpbl_pitch_model.json"))
-        if os.path.exists(os.path.join(DATA_PATH, "cpbl_obp_model.json")):
-            obp_model = xgb.Booster()
-            obp_model.load_model(os.path.join(DATA_PATH, "cpbl_obp_model.json"))
+    pitch_model = model_utils.load_xgb_booster(os.path.join(DATA_PATH, "cpbl_pitch_model.json"))
+    obp_model = model_utils.load_xgb_booster(os.path.join(DATA_PATH, "cpbl_obp_model.json"))
     return pitch_model, obp_model
 
 data = load_cpbl_data()
@@ -342,12 +335,10 @@ def render_live_section(t):
 
     st.markdown(f"#### {t('standings_header')}")
     range_labels = {"standard": t("range_full"), "top": t("range_first"), "bottom": t("range_second")}
-    selected_range = st.segmented_control(
-        "range", RANGE_KEYS, default="standard", format_func=lambda k: range_labels[k],
-        label_visibility="collapsed", key="cpbl_standings_range",
+    selected_range = ui_kit.segmented_nav(
+        "range", RANGE_KEYS, default="standard", key="cpbl_standings_range",
+        format_func=lambda k: range_labels[k],
     )
-    if selected_range is None:
-        selected_range = "standard"
 
     standings, standings_err = cached_standings(season_range=selected_range)
     if standings is None:
@@ -418,15 +409,9 @@ def render_predict_section(t, l):
     # ==========================================
     # 4. 模式切換
     # ==========================================
-    app_mode = st.segmented_control(
-        t("menu"),
-        [t("mode_pitch"), t("mode_obp")],
-        default=t("mode_pitch"),
-        label_visibility="collapsed",
-        key="cpbl_predict_mode",
+    app_mode = ui_kit.segmented_nav(
+        t("menu"), [t("mode_pitch"), t("mode_obp")], default=t("mode_pitch"), key="cpbl_predict_mode",
     )
-    if app_mode is None:
-        app_mode = t("mode_pitch")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -543,19 +528,11 @@ def render_predict_section(t, l):
                     except Exception as e:
                         st.warning(t("predict_warning").format(e=e))
 
-            res_col1, res_col2 = st.columns([1, 1])
-            with res_col1:
-                st.markdown(f"##### {t('result_header')}")
-                m1, m2 = st.columns(2)
-                with m1:
-                    st.metric(label=t("top_pick"), value=ui_predicted_name, delta=f"{predicted_prob:.1f}%")
-                with m2:
-                    st.metric(label=t("second_pick"), value=ui_secondary_name, delta=f"{secondary_prob:.1f}%", delta_color="off")
-                ui_kit.probability_bars(chart_names, chart_probs)
-            with res_col2:
-                st.markdown(f"##### {t('strike_zone_header')}")
-                fig = ui_kit.draw_strike_zone_plotly(plot_predicted_name_en, predicted_prob, lang=l)
-                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+            ui_kit.render_pitch_result(
+                t("result_header"), t("top_pick"), t("second_pick"), t("strike_zone_header"),
+                ui_predicted_name, predicted_prob, ui_secondary_name, secondary_prob,
+                chart_names, chart_probs, plot_predicted_name_en, l,
+            )
 
     # ------------------------------------------
     # 模式 B: 上壘率預測
@@ -571,30 +548,19 @@ def render_predict_section(t, l):
 
                     st.info(t("obp_info").format(b=clean_batter, hb=hist_b_obp, p=clean_pitcher, hp=hist_p_obp))
 
-                    feature_names = ['balls', 'strikes', 'outs_when_up', 'inning', 'score_diff', 'runners_on_base',
-                                     'pitch_count', 'batter_hist_obp', 'pitcher_hist_obp_allowed', 'is_home_team',
-                                     'platoon_advantage', 'base_state_code']
-
-                    feature_values = [
-                        balls, strikes, outs, inning, score_diff, runners_on_base,
-                        pitch_count, hist_b_obp, hist_p_obp, 1 if is_home else 0, 1 if platoon else 0, base_state_code
-                    ]
-
                     try:
-                        df_input = pd.DataFrame([feature_values], columns=feature_names)
+                        df_input = model_utils.build_obp_features(
+                            balls, strikes, outs, inning, score_diff, runners_on_base,
+                            pitch_count, hist_b_obp, hist_p_obp, is_home, platoon, base_state_code,
+                        )
                         dmatrix = xgb.DMatrix(df_input)
                         prob = obp_model.predict(dmatrix)[0]
 
-                        res_col1, res_col2 = st.columns([1, 1])
-                        with res_col1:
-                            fig = ui_kit.risk_gauge(float(prob), title=t("obp_metric_label").format(b=clean_batter))
-                            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-                        with res_col2:
-                            st.metric(label=t("obp_metric_label").format(b=clean_batter), value=f"{prob:.1%}")
-                            if prob > 0.35:
-                                st.warning(t("obp_high_risk"))
-                            else:
-                                st.success(t("obp_low_risk"))
+                        ui_kit.render_obp_result(
+                            t("obp_metric_label").format(b=clean_batter), prob,
+                            t("obp_high_risk"), t("obp_low_risk"),
+                            risk_cutoff=0.35, high_risk_severity="warning",
+                        )
                     except Exception as e:
                         st.error(t("obp_infer_fail").format(e=e))
 
@@ -610,15 +576,9 @@ ui_kit.hero_banner(t("title"), t("subtitle"), icon="🇹🇼")
 # ==========================================
 # 3b. 頁面子選單：預測系統 / 戰績與排行榜
 # ==========================================
-section = st.segmented_control(
-    "section",
-    [t("section_predict"), t("section_stats")],
-    default=t("section_predict"),
-    label_visibility="collapsed",
-    key="cpbl_section_nav",
+section = ui_kit.segmented_nav(
+    "section", [t("section_predict"), t("section_stats")], default=t("section_predict"), key="cpbl_section_nav",
 )
-if section is None:
-    section = t("section_predict")
 
 st.markdown("<br>", unsafe_allow_html=True)
 

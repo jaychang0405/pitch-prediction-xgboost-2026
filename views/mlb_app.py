@@ -3,15 +3,13 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import os
-import json
 import requests
 import ui_kit
+import model_utils
+from model_utils import HAS_XGB
 
-try:
+if HAS_XGB:
     import xgboost as xgb
-    HAS_XGB = True
-except ImportError:
-    HAS_XGB = False
 
 # ==========================================
 # 0. 檔案路徑設定
@@ -229,22 +227,13 @@ UI_NAMES = {
 }
 
 # ==========================================
-# 2. 輔助函式 (讀取、載入) 保持不變
+# 2. 輔助函式 (讀取、載入)：實作搬到 model_utils.py 共用
 # ==========================================
 def safe_read_csv(filename):
-    path = os.path.join(DATA_PATH, filename)
-    for enc in ['utf-8', 'utf-8-sig', 'big5', 'cp950', 'ansi']:
-        try: return pd.read_csv(path, encoding=enc)
-        except: continue
-    return pd.DataFrame()
+    return model_utils.safe_read_csv(os.path.join(DATA_PATH, filename))
 
 def safe_read_json(filename):
-    path = os.path.join(DATA_PATH, filename)
-    for enc in ['utf-8', 'utf-8-sig', 'big5', 'cp950']:
-        try:
-            with open(path, 'r', encoding=enc) as f: return json.load(f)
-        except: continue
-    return []
+    return model_utils.safe_read_json(os.path.join(DATA_PATH, filename))
 
 @st.cache_data
 def load_mlb_dicts():
@@ -276,14 +265,8 @@ def load_mlb_dicts():
 
 @st.cache_resource
 def load_mlb_models():
-    p_model, o_model = None, None
-    if HAS_XGB:
-        if os.path.exists(os.path.join(DATA_PATH, "mlb_pitch_model.json")):
-            p_model = xgb.Booster()
-            p_model.load_model(os.path.join(DATA_PATH, "mlb_pitch_model.json"))
-        if os.path.exists(os.path.join(DATA_PATH, "xgb_obp_model.json")):
-            o_model = xgb.Booster()
-            o_model.load_model(os.path.join(DATA_PATH, "xgb_obp_model.json"))
+    p_model = model_utils.load_xgb_booster(os.path.join(DATA_PATH, "mlb_pitch_model.json"))
+    o_model = model_utils.load_xgb_booster(os.path.join(DATA_PATH, "xgb_obp_model.json"))
     return p_model, o_model
 
 pitchers_db, batters_db, mlb_features, mlb_classes, obp_db_dict = load_mlb_dicts()
@@ -369,15 +352,9 @@ def render_predict_section(t, l):
     # ==========================================
     # 4. 模式切換
     # ==========================================
-    app_mode = st.segmented_control(
-        t("menu"),
-        [t("mode_pitch"), t("mode_obp")],
-        default=t("mode_pitch"),
-        label_visibility="collapsed",
-        key="mlb_predict_mode",
+    app_mode = ui_kit.segmented_nav(
+        t("menu"), [t("mode_pitch"), t("mode_obp")], default=t("mode_pitch"), key="mlb_predict_mode",
     )
-    if app_mode is None:
-        app_mode = t("mode_pitch")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -490,20 +467,13 @@ def render_predict_section(t, l):
                 second_pitch_raw = final_classes[second_idx]
                 second_prob = final_probs[second_idx]
 
-            res_c1, res_c2 = st.columns([1, 1])
-            with res_c1:
-                st.markdown(f"##### {t('result_header')}")
-                m1, m2 = st.columns(2)
-                with m1:
-                    st.metric(label=t("top_pick"), value=names.get(best_pitch_raw, best_pitch_raw), delta=f"{best_prob:.1f}%")
-                with m2:
-                    st.metric(label=t("second_pick"), value=names.get(second_pitch_raw, second_pitch_raw), delta=f"{second_prob:.1f}%", delta_color="off")
-                ui_kit.probability_bars([names.get(c, c) for c in final_classes], final_probs)
-
-            with res_c2:
-                st.markdown(f"##### {t('strike_zone_header')}")
-                fig = ui_kit.draw_strike_zone_plotly(best_pitch_raw.split('_')[0], best_prob, lang=l)
-                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+            ui_kit.render_pitch_result(
+                t("result_header"), t("top_pick"), t("second_pick"), t("strike_zone_header"),
+                names.get(best_pitch_raw, best_pitch_raw), best_prob,
+                names.get(second_pitch_raw, second_pitch_raw), second_prob,
+                [names.get(c, c) for c in final_classes], final_probs,
+                best_pitch_raw.split('_')[0], l,
+            )
 
     elif app_mode == t("mode_obp"):
         if st.button(t("btn_obp"), use_container_width=True, type="primary"):
@@ -518,31 +488,20 @@ def render_predict_section(t, l):
                     clean_pitcher_name = selected_pitcher.replace("🔥 ", "")
                     st.info(t("obp_info").format(b=clean_batter_name, hb=hist_b_obp, p=clean_pitcher_name, hp=hist_p_obp))
 
-                    feature_names = ['balls', 'strikes', 'outs_when_up', 'inning', 'score_diff',
-                                     'runners_on_base', 'pitch_count', 'batter_hist_obp',
-                                     'pitcher_hist_obp_allowed', 'is_home_team', 'platoon_advantage', 'base_state_code']
-
-                    feature_values = [
-                        balls, strikes, outs, inning, score_diff,
-                        runners_on_base, pitch_count, hist_b_obp, hist_p_obp,
-                        1 if is_home else 0, 1 if platoon else 0, base_state_code
-                    ]
-
                     try:
-                        df_input = pd.DataFrame([feature_values], columns=feature_names)
+                        df_input = model_utils.build_obp_features(
+                            balls, strikes, outs, inning, score_diff, runners_on_base,
+                            pitch_count, hist_b_obp, hist_p_obp, is_home, platoon, base_state_code,
+                        )
                         dmatrix = xgb.DMatrix(df_input)
                         prob = obp_model.predict(dmatrix)[0]
 
-                        res_c1, res_c2 = st.columns([1, 1])
-                        with res_c1:
-                            fig = ui_kit.risk_gauge(float(prob), title=t("obp_metric_label").format(b=clean_batter_name), low_threshold=0.28, high_threshold=0.33)
-                            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-                        with res_c2:
-                            st.metric(label=t("obp_metric_label").format(b=clean_batter_name), value=f"{prob:.1%}")
-                            if prob > 0.33:
-                                st.error(t("obp_high_risk"))
-                            else:
-                                st.success(t("obp_low_risk"))
+                        ui_kit.render_obp_result(
+                            t("obp_metric_label").format(b=clean_batter_name), prob,
+                            t("obp_high_risk"), t("obp_low_risk"),
+                            gauge_low_threshold=0.28, gauge_high_threshold=0.33,
+                            risk_cutoff=0.33, high_risk_severity="error",
+                        )
                     except Exception as e:
                         st.error(t("obp_infer_fail").format(e=e))
 
@@ -558,15 +517,9 @@ ui_kit.hero_banner(t("title"), t("subtitle"), icon="🇺🇸")
 # ==========================================
 # 3b. 頁面子選單：預測系統 / 明星球員
 # ==========================================
-section = st.segmented_control(
-    "section",
-    [t("section_predict"), t("section_stars")],
-    default=t("section_predict"),
-    label_visibility="collapsed",
-    key="mlb_section_nav",
+section = ui_kit.segmented_nav(
+    "section", [t("section_predict"), t("section_stars")], default=t("section_predict"), key="mlb_section_nav",
 )
-if section is None:
-    section = t("section_predict")
 
 st.markdown("<br>", unsafe_allow_html=True)
 

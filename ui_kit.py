@@ -402,6 +402,56 @@ def probability_bars(names, probs, highlight_idx=None):
     st.markdown(f'<div class="uikit-card">{"".join(rows)}</div>', unsafe_allow_html=True)
 
 
+def segmented_nav(label, options, default, key, format_func=None):
+    """包住 st.segmented_control() 後面「使用者取消選取時 fallback 回 default」
+    的樣板：segmented_control 允許取消選取而回傳 None，但這裡的導覽列/模式切換
+    永遠要有一個選項是「目前選的」，所以統一在這裡補回 default。"""
+    kwargs = {"default": default, "label_visibility": "collapsed", "key": key}
+    if format_func is not None:
+        kwargs["format_func"] = format_func
+    selected = st.segmented_control(label, options, **kwargs)
+    return default if selected is None else selected
+
+
+def render_pitch_result(result_header, top_pick_label, second_pick_label, strike_zone_header,
+                         best_name, best_prob, second_name, second_prob,
+                         chart_names, chart_probs, plot_pitch_key_en, lang):
+    """球種預測結果排版（CPBL / MLB 共用）：左欄 metric 卡片 + 機率長條，
+    右欄九宮格落點圖。"""
+    res_c1, res_c2 = st.columns([1, 1])
+    with res_c1:
+        st.markdown(f"##### {result_header}")
+        m1, m2 = st.columns(2)
+        with m1:
+            st.metric(label=top_pick_label, value=best_name, delta=f"{best_prob:.1f}%")
+        with m2:
+            st.metric(label=second_pick_label, value=second_name, delta=f"{second_prob:.1f}%", delta_color="off")
+        probability_bars(chart_names, chart_probs)
+    with res_c2:
+        st.markdown(f"##### {strike_zone_header}")
+        fig = draw_strike_zone_plotly(plot_pitch_key_en, best_prob, lang=lang)
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+
+def render_obp_result(metric_label, prob, high_risk_msg, low_risk_msg,
+                       gauge_low_threshold=0.30, gauge_high_threshold=0.38,
+                       risk_cutoff=0.35, high_risk_severity="warning"):
+    """OBP 預測結果排版（CPBL / MLB 共用）：左欄風險儀表，右欄 metric + 高/低
+    風險文字。兩聯盟門檻值與嚴重度（error/warning）不同，故皆開放參數化，
+    不強行統一數值。"""
+    res_c1, res_c2 = st.columns([1, 1])
+    with res_c1:
+        fig = risk_gauge(float(prob), title=metric_label,
+                          low_threshold=gauge_low_threshold, high_threshold=gauge_high_threshold)
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+    with res_c2:
+        st.metric(label=metric_label, value=f"{prob:.1%}")
+        if prob > risk_cutoff:
+            (st.error if high_risk_severity == "error" else st.warning)(high_risk_msg)
+        else:
+            st.success(low_risk_msg)
+
+
 def risk_gauge(prob, title="上壘機率 (xOBP)", low_threshold=0.30, high_threshold=0.38):
     """Plotly gauge：0~1 的機率風險儀表，三段色區。"""
     p = palette()
