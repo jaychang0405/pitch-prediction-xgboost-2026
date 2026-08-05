@@ -70,7 +70,7 @@ LANG = {
         "obp_low_risk": "✅ 目前對戰情境對投手有利。",
         "obp_infer_fail": "⚠️ OBP 模型推論失敗，請檢查資料格式。錯誤: {e}",
         "live_header": "🏆 即時戰績與排行榜",
-        "live_subtitle": "資料來源：CPBL 官方網站，每 30 分鐘更新一次",
+        "live_subtitle": "資料來源：野球革命 Rebas.tw，每 30 分鐘更新一次",
         "standings_header": "球隊戰績",
         "toplist_pitching_header": "⚾ 投手 TOP5",
         "toplist_batting_header": "🏏 打者 TOP5",
@@ -80,11 +80,8 @@ LANG = {
         "col_record": "勝-和-敗",
         "col_win_pct": "勝率",
         "col_games_behind": "勝差",
-        "col_home": "主場戰績",
-        "col_away": "客場戰績",
         "col_streak": "連勝/連敗",
-        "col_last10": "近十場",
-        "live_unavailable": "⚠️ 目前無法取得 CPBL 官網即時數據，請稍後再試。",
+        "live_unavailable": "⚠️ 目前無法取得即時數據，請稍後再試。",
     },
     "en": {
         "title": "CPBL Dynamic Decision Support",
@@ -126,7 +123,7 @@ LANG = {
         "obp_low_risk": "✅ The current matchup favors the pitcher.",
         "obp_infer_fail": "⚠️ OBP inference failed, please check the data format. Error: {e}",
         "live_header": "🏆 Live Standings & Leaderboards",
-        "live_subtitle": "Source: CPBL official website, refreshed every 30 minutes",
+        "live_subtitle": "Source: Rebas.tw, refreshed every 30 minutes",
         "standings_header": "Team Standings",
         "toplist_pitching_header": "⚾ Pitching Leaders (Top 5)",
         "toplist_batting_header": "🏏 Batting Leaders (Top 5)",
@@ -136,11 +133,8 @@ LANG = {
         "col_record": "W-D-L",
         "col_win_pct": "Win%",
         "col_games_behind": "GB",
-        "col_home": "Home",
-        "col_away": "Away",
         "col_streak": "Streak",
-        "col_last10": "Last 10",
-        "live_unavailable": "⚠️ Live CPBL data is unavailable right now, please try again later.",
+        "live_unavailable": "⚠️ Live data is unavailable right now, please try again later.",
     },
     "ja": {
         "title": "CPBL動的意思決定支援システム",
@@ -182,7 +176,7 @@ LANG = {
         "obp_low_risk": "✅ 現在の対戦状況は投手有利です。",
         "obp_infer_fail": "⚠️ OBPモデルの推論に失敗しました。データ形式を確認してください。エラー: {e}",
         "live_header": "🏆 リアルタイム順位・ランキング",
-        "live_subtitle": "データ提供：CPBL公式サイト（30分ごとに更新）",
+        "live_subtitle": "データ提供：Rebas.tw（30分ごとに更新）",
         "standings_header": "チーム順位",
         "toplist_pitching_header": "⚾ 投手成績 TOP5",
         "toplist_batting_header": "🏏 打者成績 TOP5",
@@ -192,11 +186,8 @@ LANG = {
         "col_record": "勝-分-敗",
         "col_win_pct": "勝率",
         "col_games_behind": "差",
-        "col_home": "本拠地",
-        "col_away": "ビジター",
         "col_streak": "連勝/連敗",
-        "col_last10": "直近10試合",
-        "live_unavailable": "⚠️ 現在CPBLの最新データを取得できません。後でもう一度お試しください。",
+        "live_unavailable": "⚠️ 現在最新データを取得できません。後でもう一度お試しください。",
     },
 }
 
@@ -285,7 +276,7 @@ pitch_model, obp_model = load_models()
 # cache_data 是依「這個 wrapper 函式自己的原始碼」算 hash key，不會追蹤它呼叫的
 # cpbl_live.py 內容有沒有變。只改 cpbl_live.py 的話 wrapper 原始碼沒變，重新部署
 # 後可能還是吃到舊格式的快取，所以用一個會手動遞增的版本號當參數，強制換新 key。
-CPBL_LIVE_CACHE_VERSION = 2
+CPBL_LIVE_CACHE_VERSION = 3
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def cached_toplist(version=CPBL_LIVE_CACHE_VERSION):
@@ -306,17 +297,18 @@ def render_leader_card(category, t):
         f'<b style="float:right;">{l["value"]}</b></div>'
         for l in leaders[1:]
     )
-    photo_html = (
-        f'<img class="uikit-player-avatar" style="width:64px;height:64px;" src="{category["photo_url"]}" />'
-        if category.get("photo_url") else "🏅"
+    badge_html = (
+        f'<div style="width:56px; height:56px; border-radius:50%; margin:0 auto; '
+        f'background:{top["hex_color"]}; display:flex; align-items:center; justify-content:center; '
+        f'font-weight:800; font-size:1.3rem; color:#ffffff; box-shadow:0 4px 14px rgba(0,0,0,0.35);">'
+        f'{top["team"]}</div>'
     )
     st.markdown(
         f"""
         <div class="uikit-card" style="text-align:center; padding:1rem 0.9rem;">
             <div style="font-weight:800;">{category['title_zh']} <span style="opacity:0.55; font-size:0.82rem;">{category['title_en']}</span></div>
-            <div style="margin:0.5rem 0;">{photo_html}</div>
+            <div style="margin:0.5rem 0;">{badge_html}</div>
             <div style="font-weight:700;">{top['name']}</div>
-            <div style="font-size:0.78rem; opacity:0.6;">{top['team']}</div>
             <div style="font-size:1.35rem; font-weight:800; color:{ui_kit.ACCENT_BLUE}; margin:0.25rem 0 0.6rem;">{top['value']}</div>
             <hr style="opacity:0.12; margin:0.4rem 0;" />
             {rest_html}
@@ -335,23 +327,42 @@ def render_live_section(t):
         if standings_err:
             st.caption(f"debug: {standings_err}")
     else:
-        df = pd.DataFrame(standings)
-        df = df.rename(columns={
-            "rank": t("col_rank"), "team": t("col_team"), "games": t("col_games"),
-            "record": t("col_record"), "win_pct": t("col_win_pct"), "games_behind": t("col_games_behind"),
-            "home_record": t("col_home"), "away_record": t("col_away"), "streak": t("col_streak"), "last10": t("col_last10"),
-        })
         st.markdown(f"#### {t('standings_header')}")
-        st.dataframe(
-            df,
-            hide_index=True,
-            use_container_width=True,
-            column_order=[t("col_rank"), "logo_url", t("col_team"), t("col_games"), t("col_record"),
-                          t("col_win_pct"), t("col_games_behind"), t("col_home"), t("col_away"),
-                          t("col_streak"), t("col_last10")],
-            column_config={
-                "logo_url": st.column_config.ImageColumn(label=""),
-            },
+        header_html = "".join(
+            f'<th style="text-align:right; padding:0.4rem 0.6rem;">{label}</th>'
+            for label in [t("col_games"), t("col_record"), t("col_win_pct"), t("col_games_behind"), t("col_streak")]
+        )
+        rows_html = ""
+        for team in standings:
+            rows_html += (
+                '<tr style="border-top:1px solid rgba(255,255,255,0.08);">'
+                f'<td style="padding:0.5rem 0.6rem; opacity:0.7;">{team["rank"]}</td>'
+                '<td style="padding:0.5rem 0.6rem;">'
+                f'<span style="display:inline-block; width:10px; height:10px; border-radius:50%; '
+                f'background:{team["hex_color"]}; margin-right:0.5rem;"></span>{team["team"]}</td>'
+                f'<td style="text-align:right; padding:0.5rem 0.6rem;">{team["games"]}</td>'
+                f'<td style="text-align:right; padding:0.5rem 0.6rem;">{team["record"]}</td>'
+                f'<td style="text-align:right; padding:0.5rem 0.6rem;">{team["win_pct"]}</td>'
+                f'<td style="text-align:right; padding:0.5rem 0.6rem;">{team["games_behind"]}</td>'
+                f'<td style="text-align:right; padding:0.5rem 0.6rem;">{team["streak"]}</td>'
+                '</tr>'
+            )
+        st.markdown(
+            f"""
+            <div class="uikit-card" style="padding:0.5rem 0.8rem;">
+                <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left; padding:0.4rem 0.6rem;">{t('col_rank')}</th>
+                            <th style="text-align:left; padding:0.4rem 0.6rem;">{t('col_team')}</th>
+                            {header_html}
+                        </tr>
+                    </thead>
+                    <tbody>{rows_html}</tbody>
+                </table>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
 
     st.markdown("<br>", unsafe_allow_html=True)
